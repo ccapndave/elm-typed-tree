@@ -1,0 +1,144 @@
+module TreePath.Tree<%- height %> exposing
+  ( decoder
+  , toRootPath
+  , Tree
+  <% for (let n = height; n >= 1; n--) { %>
+  , TreePath<%- n %>
+  , data<%- n %>
+  , top<%- n %>
+  , up<%- n %>
+  , offset<%- n %>
+  , down<%- n %>
+  <% } %>
+  )
+
+import TreePath.Data as Data exposing (Data)
+import Array exposing (Array)
+import Json.Decode as JD exposing (Decoder)
+
+type alias Tree <%- alphabet(height - 1) %> leaf =
+  Tree<%- height %> <%- alphabet(height - 1) %> leaf
+
+
+type Tree1 leaf =
+  Tree1
+    { data : leaf
+    }
+
+<% for (let n = 2; n <= height; n++) { %>
+type Tree<%- n %> <%- alphabet(n - 1) %> leaf =
+  Tree<%- n %>
+    { data : Data a leaf
+    , children : Array (Tree<%- n-1 %> <%- alphabet(n - 2, 1) %> leaf)
+    }
+
+<% } %>
+
+<% for (let n = 1; n <= height; n++) { %>
+type TreePath<%- n %> <%- alphabet(height - 1) %> leaf =
+  TreePath<%- n %>
+    { tree : Tree<%- height %> <%- alphabet(height - 1) %> leaf
+    , path : Array Int
+    }
+<% } %>
+
+type alias DecoderConfig <%- alphabet(height - 1) %> leaf =
+  {
+    <% for (let n = height; n > 1; n--) { %>
+      <%- n < height ? "," : "" %> level<%- n %>Decoder : Decoder <%- alphabet(1, height - n) %>
+      , level<%- n %>ChildrenField : String
+    <% } %>
+    , leafDecoder : Decoder leaf
+  }
+
+decoder : DecoderConfig <%- alphabet(height - 1) %> leaf -> Decoder (Tree<%- height %> <%- alphabet(height - 1) %> leaf)
+decoder config =
+  decoder<%- height %>
+    <% for (let n = height; n > 1; n--) { %>
+    (config.level<%- n %>Decoder, config.level<%- n %>ChildrenField)
+    <% } %>
+    config.leafDecoder
+
+toRootPath : Tree4 a b c leaf -> TreePath4 a b c leaf
+toRootPath tree =
+  TreePath4
+    { tree = tree
+    , path = Array.empty
+    }
+
+<% for (let n = 1; n <= height; n++) { %>
+decoder<%- n %> : <%- n > 1 ? alphabet(n-1).split(" ").map(letter => `(Decoder ${letter}, String)`).join(" -> ") + "->" : "" %> Decoder leaf -> Decoder (Tree<%- n %> <%- alphabet(n - 1) %> leaf)
+decoder<%- n %> <%- n > 1 ? alphabet(n-1).split(" ").map(letter => `(${letter}Decoder, ${letter}ChildrenField)`).join(" ") : "" %> leafDecoder =
+  <% if (n === 1) { %>
+  leafDecoder
+    |> JD.map (\data -> Tree1 { data = data })
+  <% } else { %>
+    JD.oneOf
+        [ JD.map2 (\data children -> Tree<%- n %> { data = data, children = children })
+            (aDecoder |> JD.map Data.BranchData)
+            (JD.field aChildrenField (JD.array <| decoder<%- n - 1 %> <%- n > 2 ? alphabet(n - 2, 1).split(" ").map(letter => `(${letter}Decoder, ${letter}ChildrenField)`).join(" ") : "" %> leafDecoder))
+        , JD.map (\data -> Tree<%- n %> { data = data, children = Array.empty })
+            (leafDecoder |> JD.map Data.LeafData)
+        ]
+  <% } %>
+
+getFocusedTree<%- n %> : TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> Tree<%- n %> <%- alphabet(n - 1, height - n) %> leaf
+getFocusedTree<%- n %> (TreePath<%- n %> { tree, path }) =
+  <% if (n === height) { %>
+  tree
+  <% } else { %>
+  getFocusedTree<%- n + 1 %> (TreePath<%- n + 1 %> { tree = tree, path = path })
+    |> treeChildren<%- n + 1 %>
+    |> Array.get (Array.get <%- height - (n + 1) %> path |> unsafe "getFocusedTree<%- n %>")
+    |> unsafe "getFocusedTree<%- n %>"
+  <% } %>
+
+<% if (n > 1) { %>
+treeChildren<%- n %> : Tree<%- n %> <%- alphabet(n - 1) %> leaf -> Array (Tree<%- n - 1 %> <% if (n === 2) { %>leaf<% } else { %><%- alphabet(n - 2, 1) %> leaf<% } %>)
+treeChildren<%- n %> (Tree<%- n %> { children }) = children
+<% } %>
+
+treeData<%- n %> : Tree<%- n %> <%- alphabet(n - 1) %> leaf -> <% if (n === 1) { %>leaf<% } else { %>Data a leaf<% } %>
+treeData<%- n %> (Tree<%- n %> { data }) = data
+
+data<%- n %> : TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> <% if (n === 1) { %>leaf<% } else { %>Data <%- alphabet(1, height - (n)) %> leaf<% } %>
+data<%- n %> = getFocusedTree<%- n %> >> treeData<%- n %>
+
+top<%- n %> : TreePath<%- n%> <%- alphabet(height - 1) %> leaf -> TreePath<%- height %> <%- alphabet(height - 1) %> leaf
+top<%- n %> (TreePath<%- n %> { tree, path }) = TreePath<%- height %> { tree = tree, path = Array.empty }
+
+offset<%- n %> : Int -> TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> Maybe (TreePath<%- n %> <%- alphabet(height - 1) %> leaf)
+offset<%- n %> dx (TreePath<%- n %> { tree, path } as treePath) =
+  <% if (n === height) { %>
+  Nothing
+  <% } else { %>
+  treePath
+    |> up<%- n %>
+    |> Maybe.andThen (down<%- n + 1 %> <| (Array.get <%- height - (n + 1) %> path |> unsafe "offset<%- n %>") + dx)
+  <% } %>
+
+down<%- n %> : Int -> TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> Maybe <% if (n === 1) { %>Never<% } else { %>(TreePath<%- n - 1 %> <%- alphabet(height - 1) %> leaf)<% } %>
+down<%- n %> idx (TreePath<%- n %> { tree, path } as treePath) =
+  <% if (n === 1) { %>
+  Nothing
+  <% } else { %>
+  getFocusedTree<%- n %> treePath
+    |> treeChildren<%- n %>
+    |> Array.get idx
+    |> Maybe.map (\_ -> TreePath<%- n - 1 %> { tree = tree, path = Array.push idx path })
+  <% } %>
+
+up<%- n %> : TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> Maybe <% if (n === height) { %>Never<% } else { %>(TreePath<%- n + 1 %> <%- alphabet(height - 1) %> leaf)<% } %>
+up<%- n %> (TreePath<%- n %> { tree, path }) =
+  <% if (n === height) { %>
+  Nothing
+  <% } else { %>
+  Just <| TreePath<%- n + 1 %> { tree = tree, path = Array.slice 0 -1 path }
+  <% } %>
+<% } %>
+
+unsafe : String -> Maybe a -> a
+unsafe msg maybe =
+  case maybe of
+    Just a -> a
+    Nothing -> Debug.crash msg

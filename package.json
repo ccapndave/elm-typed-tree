@@ -1,0 +1,20 @@
+{
+  "name": "elm-tree-path",
+  "version": "1.0.0",
+  "scripts": {
+    "generate-one": "ts-node gen/generate-one.ts",
+    "write-all": "ts-node gen/write-all"
+  },
+  "author": "Dave Keen <dev@ruffness.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@types/ejs": "^2.6.0",
+    "ejs": "^2.6.1",
+    "elm-format": "^0.6.1-alpha",
+    "ts-node": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^10.5.2",
+    "typescript": "^2.9.2"
+  }
+}
