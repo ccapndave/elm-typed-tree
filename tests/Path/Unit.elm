@@ -16,5 +16,8 @@ offset = Tree4.offset2
 down : Int -> UnitPath -> Maybe ExercisePath
 down = Tree4.down2
 
+downs : UnitPath -> List ExercisePath
+downs = Tree4.downs2
+
 up : UnitPath -> Maybe CoursePath
 up = Tree4.up2

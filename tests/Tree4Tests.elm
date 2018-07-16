@@ -135,4 +135,9 @@ suite =
         |> Maybe.map Course.data
         |> Expect.equal Nothing
 
+    , test "Downs" <| \_ ->
+      menuPath
+        |> Menu.downs
+        |> List.map Course.data
+        |> Expect.equal [ BranchData { courseId = 2 }, LeafData { exerciseId = 6 } ]
     ]

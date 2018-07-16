@@ -9,18 +9,21 @@ module TreePath.Tree3
         , up3
         , offset3
         , down3
+        , downs3
         , TreePath2
         , data2
         , top2
         , up2
         , offset2
         , down2
+        , downs2
         , TreePath1
         , data1
         , top1
         , up1
         , offset1
         , down1
+        , downs1
         )
 
 import TreePath.Data as Data exposing (Data)
@@ -139,6 +142,11 @@ down1 idx ((TreePath1 { tree, path }) as treePath) =
     Nothing
 
 
+downs1 : TreePath1 a b leaf -> List Never
+downs1 ((TreePath1 { tree, path }) as treePath) =
+    []
+
+
 up1 : TreePath1 a b leaf -> Maybe (TreePath2 a b leaf)
 up1 (TreePath1 { tree, path }) =
     Just <| TreePath2 { tree = tree, path = Array.slice 0 -1 path }
@@ -198,6 +206,15 @@ down2 idx ((TreePath2 { tree, path }) as treePath) =
         |> Maybe.map (\_ -> TreePath1 { tree = tree, path = Array.push idx path })
 
 
+downs2 : TreePath2 a b leaf -> List (TreePath1 a b leaf)
+downs2 ((TreePath2 { tree, path }) as treePath) =
+    getFocusedTree2 treePath
+        |> treeChildren2
+        |> (\children -> Array.length children - 1)
+        |> List.range 0
+        |> List.map (\idx -> TreePath1 { tree = tree, path = Array.push idx path })
+
+
 up2 : TreePath2 a b leaf -> Maybe (TreePath3 a b leaf)
 up2 (TreePath2 { tree, path }) =
     Just <| TreePath3 { tree = tree, path = Array.slice 0 -1 path }
@@ -250,6 +267,15 @@ down3 idx ((TreePath3 { tree, path }) as treePath) =
         |> treeChildren3
         |> Array.get idx
         |> Maybe.map (\_ -> TreePath2 { tree = tree, path = Array.push idx path })
+
+
+downs3 : TreePath3 a b leaf -> List (TreePath2 a b leaf)
+downs3 ((TreePath3 { tree, path }) as treePath) =
+    getFocusedTree3 treePath
+        |> treeChildren3
+        |> (\children -> Array.length children - 1)
+        |> List.range 0
+        |> List.map (\idx -> TreePath2 { tree = tree, path = Array.push idx path })
 
 
 up3 : TreePath3 a b leaf -> Maybe Never

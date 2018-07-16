@@ -9,12 +9,14 @@ module TreePath.Tree2
         , up2
         , offset2
         , down2
+        , downs2
         , TreePath1
         , data1
         , top1
         , up1
         , offset1
         , down1
+        , downs1
         )
 
 import TreePath.Data as Data exposing (Data)
@@ -116,6 +118,11 @@ down1 idx ((TreePath1 { tree, path }) as treePath) =
     Nothing
 
 
+downs1 : TreePath1 a leaf -> List Never
+downs1 ((TreePath1 { tree, path }) as treePath) =
+    []
+
+
 up1 : TreePath1 a leaf -> Maybe (TreePath2 a leaf)
 up1 (TreePath1 { tree, path }) =
     Just <| TreePath2 { tree = tree, path = Array.slice 0 -1 path }
@@ -168,6 +175,15 @@ down2 idx ((TreePath2 { tree, path }) as treePath) =
         |> treeChildren2
         |> Array.get idx
         |> Maybe.map (\_ -> TreePath1 { tree = tree, path = Array.push idx path })
+
+
+downs2 : TreePath2 a leaf -> List (TreePath1 a leaf)
+downs2 ((TreePath2 { tree, path }) as treePath) =
+    getFocusedTree2 treePath
+        |> treeChildren2
+        |> (\children -> Array.length children - 1)
+        |> List.range 0
+        |> List.map (\idx -> TreePath1 { tree = tree, path = Array.push idx path })
 
 
 up2 : TreePath2 a leaf -> Maybe Never

@@ -16,5 +16,8 @@ offset = Tree4.offset4
 down : Int -> MenuPath -> Maybe CoursePath
 down = Tree4.down4
 
+downs : MenuPath -> List CoursePath
+downs = Tree4.downs4
+
 up : MenuPath -> Maybe Never
 up = Tree4.up4

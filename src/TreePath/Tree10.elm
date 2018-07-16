@@ -9,60 +9,70 @@ module TreePath.Tree10
         , up10
         , offset10
         , down10
+        , downs10
         , TreePath9
         , data9
         , top9
         , up9
         , offset9
         , down9
+        , downs9
         , TreePath8
         , data8
         , top8
         , up8
         , offset8
         , down8
+        , downs8
         , TreePath7
         , data7
         , top7
         , up7
         , offset7
         , down7
+        , downs7
         , TreePath6
         , data6
         , top6
         , up6
         , offset6
         , down6
+        , downs6
         , TreePath5
         , data5
         , top5
         , up5
         , offset5
         , down5
+        , downs5
         , TreePath4
         , data4
         , top4
         , up4
         , offset4
         , down4
+        , downs4
         , TreePath3
         , data3
         , top3
         , up3
         , offset3
         , down3
+        , downs3
         , TreePath2
         , data2
         , top2
         , up2
         , offset2
         , down2
+        , downs2
         , TreePath1
         , data1
         , top1
         , up1
         , offset1
         , down1
+        , downs1
         )
 
 import TreePath.Data as Data exposing (Data)
@@ -300,6 +310,11 @@ down1 idx ((TreePath1 { tree, path }) as treePath) =
     Nothing
 
 
+downs1 : TreePath1 a b c d e f g h i leaf -> List Never
+downs1 ((TreePath1 { tree, path }) as treePath) =
+    []
+
+
 up1 : TreePath1 a b c d e f g h i leaf -> Maybe (TreePath2 a b c d e f g h i leaf)
 up1 (TreePath1 { tree, path }) =
     Just <| TreePath2 { tree = tree, path = Array.slice 0 -1 path }
@@ -357,6 +372,15 @@ down2 idx ((TreePath2 { tree, path }) as treePath) =
         |> treeChildren2
         |> Array.get idx
         |> Maybe.map (\_ -> TreePath1 { tree = tree, path = Array.push idx path })
+
+
+downs2 : TreePath2 a b c d e f g h i leaf -> List (TreePath1 a b c d e f g h i leaf)
+downs2 ((TreePath2 { tree, path }) as treePath) =
+    getFocusedTree2 treePath
+        |> treeChildren2
+        |> (\children -> Array.length children - 1)
+        |> List.range 0
+        |> List.map (\idx -> TreePath1 { tree = tree, path = Array.push idx path })
 
 
 up2 : TreePath2 a b c d e f g h i leaf -> Maybe (TreePath3 a b c d e f g h i leaf)
@@ -418,6 +442,15 @@ down3 idx ((TreePath3 { tree, path }) as treePath) =
         |> Maybe.map (\_ -> TreePath2 { tree = tree, path = Array.push idx path })
 
 
+downs3 : TreePath3 a b c d e f g h i leaf -> List (TreePath2 a b c d e f g h i leaf)
+downs3 ((TreePath3 { tree, path }) as treePath) =
+    getFocusedTree3 treePath
+        |> treeChildren3
+        |> (\children -> Array.length children - 1)
+        |> List.range 0
+        |> List.map (\idx -> TreePath2 { tree = tree, path = Array.push idx path })
+
+
 up3 : TreePath3 a b c d e f g h i leaf -> Maybe (TreePath4 a b c d e f g h i leaf)
 up3 (TreePath3 { tree, path }) =
     Just <| TreePath4 { tree = tree, path = Array.slice 0 -1 path }
@@ -475,6 +508,15 @@ down4 idx ((TreePath4 { tree, path }) as treePath) =
         |> treeChildren4
         |> Array.get idx
         |> Maybe.map (\_ -> TreePath3 { tree = tree, path = Array.push idx path })
+
+
+downs4 : TreePath4 a b c d e f g h i leaf -> List (TreePath3 a b c d e f g h i leaf)
+downs4 ((TreePath4 { tree, path }) as treePath) =
+    getFocusedTree4 treePath
+        |> treeChildren4
+        |> (\children -> Array.length children - 1)
+        |> List.range 0
+        |> List.map (\idx -> TreePath3 { tree = tree, path = Array.push idx path })
 
 
 up4 : TreePath4 a b c d e f g h i leaf -> Maybe (TreePath5 a b c d e f g h i leaf)
@@ -536,6 +578,15 @@ down5 idx ((TreePath5 { tree, path }) as treePath) =
         |> Maybe.map (\_ -> TreePath4 { tree = tree, path = Array.push idx path })
 
 
+downs5 : TreePath5 a b c d e f g h i leaf -> List (TreePath4 a b c d e f g h i leaf)
+downs5 ((TreePath5 { tree, path }) as treePath) =
+    getFocusedTree5 treePath
+        |> treeChildren5
+        |> (\children -> Array.length children - 1)
+        |> List.range 0
+        |> List.map (\idx -> TreePath4 { tree = tree, path = Array.push idx path })
+
+
 up5 : TreePath5 a b c d e f g h i leaf -> Maybe (TreePath6 a b c d e f g h i leaf)
 up5 (TreePath5 { tree, path }) =
     Just <| TreePath6 { tree = tree, path = Array.slice 0 -1 path }
@@ -593,6 +644,15 @@ down6 idx ((TreePath6 { tree, path }) as treePath) =
         |> treeChildren6
         |> Array.get idx
         |> Maybe.map (\_ -> TreePath5 { tree = tree, path = Array.push idx path })
+
+
+downs6 : TreePath6 a b c d e f g h i leaf -> List (TreePath5 a b c d e f g h i leaf)
+downs6 ((TreePath6 { tree, path }) as treePath) =
+    getFocusedTree6 treePath
+        |> treeChildren6
+        |> (\children -> Array.length children - 1)
+        |> List.range 0
+        |> List.map (\idx -> TreePath5 { tree = tree, path = Array.push idx path })
 
 
 up6 : TreePath6 a b c d e f g h i leaf -> Maybe (TreePath7 a b c d e f g h i leaf)
@@ -654,6 +714,15 @@ down7 idx ((TreePath7 { tree, path }) as treePath) =
         |> Maybe.map (\_ -> TreePath6 { tree = tree, path = Array.push idx path })
 
 
+downs7 : TreePath7 a b c d e f g h i leaf -> List (TreePath6 a b c d e f g h i leaf)
+downs7 ((TreePath7 { tree, path }) as treePath) =
+    getFocusedTree7 treePath
+        |> treeChildren7
+        |> (\children -> Array.length children - 1)
+        |> List.range 0
+        |> List.map (\idx -> TreePath6 { tree = tree, path = Array.push idx path })
+
+
 up7 : TreePath7 a b c d e f g h i leaf -> Maybe (TreePath8 a b c d e f g h i leaf)
 up7 (TreePath7 { tree, path }) =
     Just <| TreePath8 { tree = tree, path = Array.slice 0 -1 path }
@@ -711,6 +780,15 @@ down8 idx ((TreePath8 { tree, path }) as treePath) =
         |> treeChildren8
         |> Array.get idx
         |> Maybe.map (\_ -> TreePath7 { tree = tree, path = Array.push idx path })
+
+
+downs8 : TreePath8 a b c d e f g h i leaf -> List (TreePath7 a b c d e f g h i leaf)
+downs8 ((TreePath8 { tree, path }) as treePath) =
+    getFocusedTree8 treePath
+        |> treeChildren8
+        |> (\children -> Array.length children - 1)
+        |> List.range 0
+        |> List.map (\idx -> TreePath7 { tree = tree, path = Array.push idx path })
 
 
 up8 : TreePath8 a b c d e f g h i leaf -> Maybe (TreePath9 a b c d e f g h i leaf)
@@ -772,6 +850,15 @@ down9 idx ((TreePath9 { tree, path }) as treePath) =
         |> Maybe.map (\_ -> TreePath8 { tree = tree, path = Array.push idx path })
 
 
+downs9 : TreePath9 a b c d e f g h i leaf -> List (TreePath8 a b c d e f g h i leaf)
+downs9 ((TreePath9 { tree, path }) as treePath) =
+    getFocusedTree9 treePath
+        |> treeChildren9
+        |> (\children -> Array.length children - 1)
+        |> List.range 0
+        |> List.map (\idx -> TreePath8 { tree = tree, path = Array.push idx path })
+
+
 up9 : TreePath9 a b c d e f g h i leaf -> Maybe (TreePath10 a b c d e f g h i leaf)
 up9 (TreePath9 { tree, path }) =
     Just <| TreePath10 { tree = tree, path = Array.slice 0 -1 path }
@@ -824,6 +911,15 @@ down10 idx ((TreePath10 { tree, path }) as treePath) =
         |> treeChildren10
         |> Array.get idx
         |> Maybe.map (\_ -> TreePath9 { tree = tree, path = Array.push idx path })
+
+
+downs10 : TreePath10 a b c d e f g h i leaf -> List (TreePath9 a b c d e f g h i leaf)
+downs10 ((TreePath10 { tree, path }) as treePath) =
+    getFocusedTree10 treePath
+        |> treeChildren10
+        |> (\children -> Array.length children - 1)
+        |> List.range 0
+        |> List.map (\idx -> TreePath9 { tree = tree, path = Array.push idx path })
 
 
 up10 : TreePath10 a b c d e f g h i leaf -> Maybe Never

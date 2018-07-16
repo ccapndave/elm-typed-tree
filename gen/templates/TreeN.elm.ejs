@@ -9,6 +9,7 @@ module TreePath.Tree<%- height %> exposing
   , up<%- n %>
   , offset<%- n %>
   , down<%- n %>
+  , downs<%- n %>
   <% } %>
   )
 
@@ -126,6 +127,18 @@ down<%- n %> idx (TreePath<%- n %> { tree, path } as treePath) =
     |> treeChildren<%- n %>
     |> Array.get idx
     |> Maybe.map (\_ -> TreePath<%- n - 1 %> { tree = tree, path = Array.push idx path })
+  <% } %>
+
+downs<%- n %> : TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> List <% if (n === 1) { %>Never<% } else { %>(TreePath<%- n - 1 %> <%- alphabet(height - 1) %> leaf)<% } %>
+downs<%- n %> ((TreePath<%- n %> { tree, path }) as treePath) =
+  <% if (n === 1) { %>
+  []
+  <% } else { %>
+  getFocusedTree<%- n %> treePath
+    |> treeChildren<%- n %>
+    |> (\children -> Array.length children - 1)
+    |> List.range 0
+    |> List.map (\idx -> TreePath<%- n - 1 %> { tree = tree, path = Array.push idx path })
   <% } %>
 
 up<%- n %> : TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> Maybe <% if (n === height) { %>Never<% } else { %>(TreePath<%- n + 1 %> <%- alphabet(height - 1) %> leaf)<% } %>
