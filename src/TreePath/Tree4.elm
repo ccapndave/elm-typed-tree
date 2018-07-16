@@ -1,6 +1,8 @@
 module TreePath.Tree4
     exposing
-        ( decoder
+        ( DecoderConfig
+        , decoder
+        , pathDecoder
         , toRootPath
         , Tree
         , TreePath4
@@ -97,18 +99,22 @@ type TreePath4 a b c leaf
         }
 
 
-type alias DecoderConfig a b c leaf =
+type alias DecoderConfig a b c leaf path =
     { level4Decoder : Decoder a
+    , level4PathType : TreePath4 a b c leaf -> path
     , level4ChildrenField : String
     , level3Decoder : Decoder b
+    , level3PathType : TreePath3 a b c leaf -> path
     , level3ChildrenField : String
     , level2Decoder : Decoder c
+    , level2PathType : TreePath2 a b c leaf -> path
     , level2ChildrenField : String
     , leafDecoder : Decoder leaf
+    , leafPathType : TreePath1 a b c leaf -> path
     }
 
 
-decoder : DecoderConfig a b c leaf -> Decoder (Tree4 a b c leaf)
+decoder : DecoderConfig a b c leaf path -> Decoder (Tree4 a b c leaf)
 decoder config =
     decoder4
         ( config.level4Decoder, config.level4ChildrenField )
@@ -125,11 +131,33 @@ toRootPath tree =
         }
 
 
-pathDecoder : DecoderConfig a b c leaf -> Decoder (TreePath4 a b c leaf)
+pathDecoder : DecoderConfig a b c leaf path -> Decoder path
 pathDecoder config =
-    JD.map2 (\tree path -> TreePath4 { tree = tree, path = path })
-        (JD.field "tree" <| decoder config)
-        (JD.field "path" <| JD.array JD.int)
+    (JD.field "path" <| JD.array JD.int)
+        |> JD.andThen
+            (\path ->
+                case Array.length path of
+                    1 ->
+                        JD.succeed (config.leafPathType << TreePath1)
+
+                    2 ->
+                        JD.succeed (config.level2PathType << TreePath2)
+
+                    3 ->
+                        JD.succeed (config.level3PathType << TreePath3)
+
+                    4 ->
+                        JD.succeed (config.level4PathType << TreePath4)
+
+                    otherwise ->
+                        JD.fail <| "Illegal path length " ++ toString (Array.length path)
+            )
+        |> JD.andThen
+            (\pathConstructor ->
+                JD.map2 (\tree path -> pathConstructor { tree = tree, path = path })
+                    (JD.field "tree" <| decoder config)
+                    (JD.field "path" <| JD.array JD.int)
+            )
 
 
 decoder1 : Decoder leaf -> Decoder (Tree1 leaf)

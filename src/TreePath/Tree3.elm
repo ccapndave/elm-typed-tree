@@ -1,6 +1,8 @@
 module TreePath.Tree3
     exposing
-        ( decoder
+        ( DecoderConfig
+        , decoder
+        , pathDecoder
         , toRootPath
         , Tree
         , TreePath3
@@ -76,16 +78,19 @@ type TreePath3 a b leaf
         }
 
 
-type alias DecoderConfig a b leaf =
+type alias DecoderConfig a b leaf path =
     { level3Decoder : Decoder a
+    , level3PathType : TreePath3 a b c leaf -> path
     , level3ChildrenField : String
     , level2Decoder : Decoder b
+    , level2PathType : TreePath2 a b c leaf -> path
     , level2ChildrenField : String
     , leafDecoder : Decoder leaf
+    , leafPathType : TreePath1 a b c leaf -> path
     }
 
 
-decoder : DecoderConfig a b leaf -> Decoder (Tree3 a b leaf)
+decoder : DecoderConfig a b leaf path -> Decoder (Tree3 a b leaf)
 decoder config =
     decoder3
         ( config.level3Decoder, config.level3ChildrenField )
@@ -101,11 +106,30 @@ toRootPath tree =
         }
 
 
-pathDecoder : DecoderConfig a b leaf -> Decoder (TreePath3 a b leaf)
+pathDecoder : DecoderConfig a b leaf path -> Decoder path
 pathDecoder config =
-    JD.map2 (\tree path -> TreePath3 { tree = tree, path = path })
-        (JD.field "tree" <| decoder config)
-        (JD.field "path" <| JD.array JD.int)
+    (JD.field "path" <| JD.array JD.int)
+        |> JD.andThen
+            (\path ->
+                case Array.length path of
+                    1 ->
+                        JD.succeed (config.leafPathType << TreePath1)
+
+                    2 ->
+                        JD.succeed (config.level2PathType << TreePath2)
+
+                    3 ->
+                        JD.succeed (config.level3PathType << TreePath3)
+
+                    otherwise ->
+                        JD.fail <| "Illegal path length " ++ toString (Array.length path)
+            )
+        |> JD.andThen
+            (\pathConstructor ->
+                JD.map2 (\tree path -> pathConstructor { tree = tree, path = path })
+                    (JD.field "tree" <| decoder config)
+                    (JD.field "path" <| JD.array JD.int)
+            )
 
 
 decoder1 : Decoder leaf -> Decoder (Tree1 leaf)

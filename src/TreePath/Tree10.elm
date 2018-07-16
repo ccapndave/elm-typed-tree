@@ -1,6 +1,8 @@
 module TreePath.Tree10
     exposing
-        ( decoder
+        ( DecoderConfig
+        , decoder
+        , pathDecoder
         , toRootPath
         , Tree
         , TreePath10
@@ -223,30 +225,40 @@ type TreePath10 a b c d e f g h i leaf
         }
 
 
-type alias DecoderConfig a b c d e f g h i leaf =
+type alias DecoderConfig a b c d e f g h i leaf path =
     { level10Decoder : Decoder a
+    , level10PathType : TreePath10 a b c leaf -> path
     , level10ChildrenField : String
     , level9Decoder : Decoder b
+    , level9PathType : TreePath9 a b c leaf -> path
     , level9ChildrenField : String
     , level8Decoder : Decoder c
+    , level8PathType : TreePath8 a b c leaf -> path
     , level8ChildrenField : String
     , level7Decoder : Decoder d
+    , level7PathType : TreePath7 a b c leaf -> path
     , level7ChildrenField : String
     , level6Decoder : Decoder e
+    , level6PathType : TreePath6 a b c leaf -> path
     , level6ChildrenField : String
     , level5Decoder : Decoder f
+    , level5PathType : TreePath5 a b c leaf -> path
     , level5ChildrenField : String
     , level4Decoder : Decoder g
+    , level4PathType : TreePath4 a b c leaf -> path
     , level4ChildrenField : String
     , level3Decoder : Decoder h
+    , level3PathType : TreePath3 a b c leaf -> path
     , level3ChildrenField : String
     , level2Decoder : Decoder i
+    , level2PathType : TreePath2 a b c leaf -> path
     , level2ChildrenField : String
     , leafDecoder : Decoder leaf
+    , leafPathType : TreePath1 a b c leaf -> path
     }
 
 
-decoder : DecoderConfig a b c d e f g h i leaf -> Decoder (Tree10 a b c d e f g h i leaf)
+decoder : DecoderConfig a b c d e f g h i leaf path -> Decoder (Tree10 a b c d e f g h i leaf)
 decoder config =
     decoder10
         ( config.level10Decoder, config.level10ChildrenField )
@@ -269,11 +281,51 @@ toRootPath tree =
         }
 
 
-pathDecoder : DecoderConfig a b c d e f g h i leaf -> Decoder (TreePath10 a b c d e f g h i leaf)
+pathDecoder : DecoderConfig a b c d e f g h i leaf path -> Decoder path
 pathDecoder config =
-    JD.map2 (\tree path -> TreePath10 { tree = tree, path = path })
-        (JD.field "tree" <| decoder config)
-        (JD.field "path" <| JD.array JD.int)
+    (JD.field "path" <| JD.array JD.int)
+        |> JD.andThen
+            (\path ->
+                case Array.length path of
+                    1 ->
+                        JD.succeed (config.leafPathType << TreePath1)
+
+                    2 ->
+                        JD.succeed (config.level2PathType << TreePath2)
+
+                    3 ->
+                        JD.succeed (config.level3PathType << TreePath3)
+
+                    4 ->
+                        JD.succeed (config.level4PathType << TreePath4)
+
+                    5 ->
+                        JD.succeed (config.level5PathType << TreePath5)
+
+                    6 ->
+                        JD.succeed (config.level6PathType << TreePath6)
+
+                    7 ->
+                        JD.succeed (config.level7PathType << TreePath7)
+
+                    8 ->
+                        JD.succeed (config.level8PathType << TreePath8)
+
+                    9 ->
+                        JD.succeed (config.level9PathType << TreePath9)
+
+                    10 ->
+                        JD.succeed (config.level10PathType << TreePath10)
+
+                    otherwise ->
+                        JD.fail <| "Illegal path length " ++ toString (Array.length path)
+            )
+        |> JD.andThen
+            (\pathConstructor ->
+                JD.map2 (\tree path -> pathConstructor { tree = tree, path = path })
+                    (JD.field "tree" <| decoder config)
+                    (JD.field "path" <| JD.array JD.int)
+            )
 
 
 decoder1 : Decoder leaf -> Decoder (Tree1 leaf)

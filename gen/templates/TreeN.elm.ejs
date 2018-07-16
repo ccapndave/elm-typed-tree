@@ -1,5 +1,7 @@
 module TreePath.Tree<%- height %> exposing
-  ( decoder
+  ( DecoderConfig
+  , decoder
+  , pathDecoder
   , toRootPath
   , Tree
   <% for (let n = height; n >= 1; n--) { %>
@@ -43,16 +45,18 @@ type TreePath<%- n %> <%- alphabet(height - 1) %> leaf =
     }
 <% } %>
 
-type alias DecoderConfig <%- alphabet(height - 1) %> leaf =
+type alias DecoderConfig <%- alphabet(height - 1) %> leaf path =
   {
     <% for (let n = height; n > 1; n--) { %>
       <%- n < height ? "," : "" %> level<%- n %>Decoder : Decoder <%- alphabet(1, height - n) %>
+      , level<%- n %>PathType : TreePath<%- n %> a b c leaf -> path
       , level<%- n %>ChildrenField : String
     <% } %>
     , leafDecoder : Decoder leaf
+    , leafPathType : TreePath1 a b c leaf -> path
   }
 
-decoder : DecoderConfig <%- alphabet(height - 1) %> leaf -> Decoder (Tree<%- height %> <%- alphabet(height - 1) %> leaf)
+decoder : DecoderConfig <%- alphabet(height - 1) %> leaf path -> Decoder (Tree<%- height %> <%- alphabet(height - 1) %> leaf)
 decoder config =
   decoder<%- height %>
     <% for (let n = height; n > 1; n--) { %>
@@ -67,11 +71,22 @@ toRootPath tree =
     , path = Array.empty
     }
 
-pathDecoder : DecoderConfig <%- alphabet(height - 1) %> leaf -> Decoder (TreePath<%- height %> <%- alphabet(height - 1) %> leaf )
+
+pathDecoder : DecoderConfig <%- alphabet(height - 1) %> leaf path -> Decoder path
 pathDecoder config =
-  JD.map2 (\tree path -> TreePath<%- height %> { tree = tree, path = path })
-    (JD.field "tree" <| decoder config)
-    (JD.field "path" <| JD.array JD.int)
+  (JD.field "path" <| JD.array JD.int)
+    |> JD.andThen (\path ->
+      case Array.length path of
+        <% for (let j = 1; j <= height; j++) { %>
+        <%- j %> -> JD.succeed (config.<% if (j === 1) { %>leafPathType<% } else { %>level<%- j %>PathType<% } %> << TreePath<%- j %>)
+        <% } %>
+        otherwise -> JD.fail <| "Illegal path length " ++ toString (Array.length path)
+    )
+    |> JD.andThen (\pathConstructor ->
+      JD.map2 (\tree path -> pathConstructor { tree = tree, path = path })
+        (JD.field "tree" <| decoder config)
+        (JD.field "path" <| JD.array JD.int)
+    )
 
 <% for (let n = 1; n <= height; n++) { %>
 decoder<%- n %> : <%- n > 1 ? alphabet(n-1).split(" ").map(letter => `(Decoder ${letter}, String)`).join(" -> ") + "->" : "" %> Decoder leaf -> Decoder (Tree<%- n %> <%- alphabet(n - 1) %> leaf)
