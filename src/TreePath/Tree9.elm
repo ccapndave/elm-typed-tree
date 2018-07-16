@@ -245,6 +245,13 @@ toRootPath tree =
         }
 
 
+pathDecoder : DecoderConfig a b c d e f g h leaf -> Decoder (TreePath9 a b c d e f g h leaf)
+pathDecoder config =
+    JD.map2 (\tree path -> TreePath9 { tree = tree, path = path })
+        (JD.field "tree" <| decoder config)
+        (JD.field "path" <| JD.array JD.int)
+
+
 decoder1 : Decoder leaf -> Decoder (Tree1 leaf)
 decoder1 leafDecoder =
     leafDecoder

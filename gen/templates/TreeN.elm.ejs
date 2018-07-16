@@ -67,6 +67,12 @@ toRootPath tree =
     , path = Array.empty
     }
 
+pathDecoder : DecoderConfig <%- alphabet(height - 1) %> leaf -> Decoder (TreePath<%- height %> <%- alphabet(height - 1) %> leaf )
+pathDecoder config =
+  JD.map2 (\tree path -> TreePath<%- height %> { tree = tree, path = path })
+    (JD.field "tree" <| decoder config)
+    (JD.field "path" <| JD.array JD.int)
+
 <% for (let n = 1; n <= height; n++) { %>
 decoder<%- n %> : <%- n > 1 ? alphabet(n-1).split(" ").map(letter => `(Decoder ${letter}, String)`).join(" -> ") + "->" : "" %> Decoder leaf -> Decoder (Tree<%- n %> <%- alphabet(n - 1) %> leaf)
 decoder<%- n %> <%- n > 1 ? alphabet(n-1).split(" ").map(letter => `(${letter}Decoder, ${letter}ChildrenField)`).join(" ") : "" %> leafDecoder =
