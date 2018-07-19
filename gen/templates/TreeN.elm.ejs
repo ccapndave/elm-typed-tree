@@ -6,6 +6,7 @@ module TreePath.Tree<%- height %> exposing
   , Tree
   <% for (let n = height; n >= 1; n--) { %>
   , TreePath<%- n %>
+  , pathEncode<%- n %>
   , data<%- n %>
   , top<%- n %>
   , up<%- n %>
@@ -18,6 +19,7 @@ module TreePath.Tree<%- height %> exposing
 import TreePath.Data as Data exposing (Data)
 import Array exposing (Array)
 import Json.Decode as JD exposing (Decoder)
+import Json.Encode as JE exposing (Value)
 
 type alias Tree <%- alphabet(height - 1) %> leaf =
   Tree<%- height %> <%- alphabet(height - 1) %> leaf
@@ -48,37 +50,44 @@ type TreePath<%- n %> <%- alphabet(height - 1) %> leaf =
 type alias DecoderConfig <%- alphabet(height - 1) %> leaf path =
   {
     <% for (let n = height; n > 1; n--) { %>
-      <%- n < height ? "," : "" %> level<%- n %>Decoder : Decoder <%- alphabet(1, height - n) %>
-      , level<%- n %>PathType : TreePath<%- n %> a b c leaf -> path
-      , level<%- n %>ChildrenField : String
+      <%- n < height ? "," : "" %> level<%- n %> :
+        { decoder : Decoder <%- alphabet(1, height - n) %>
+        , encoders : <%- alphabet(1, height - n) %> -> List (String, Value)
+        , pathType : TreePath<%- n %> a b c leaf -> path
+        , childrenField : String
+        }
     <% } %>
-    , leafDecoder : Decoder leaf
-    , leafPathType : TreePath1 a b c leaf -> path
+    , leaf :
+      { decoder : Decoder leaf
+      , encode : leaf -> Value
+      , pathType : TreePath1 a b c leaf -> path
+      }
   }
 
 decoder : DecoderConfig <%- alphabet(height - 1) %> leaf path -> Decoder (Tree<%- height %> <%- alphabet(height - 1) %> leaf)
 decoder config =
   decoder<%- height %>
     <% for (let n = height; n > 1; n--) { %>
-    (config.level<%- n %>Decoder, config.level<%- n %>ChildrenField)
+    (config.level<%- n %>.decoder, config.level<%- n %>.childrenField)
     <% } %>
-    config.leafDecoder
+    config.leaf.decoder
 
-toRootPath : Tree4 a b c leaf -> TreePath4 a b c leaf
-toRootPath tree =
-  TreePath4
-    { tree = tree
-    , path = Array.empty
-    }
-
+encode : DecoderConfig <%- alphabet(height - 1) %> leaf path -> Tree<%- height %> <%- alphabet(height - 1) %> leaf -> Value
+encode config tree =
+  encode<%- height %>
+    <% for (let n = height; n > 1; n--) { %>
+    (config.level<%- n %>.encoders, config.level<%- n %>.childrenField)
+    <% } %>
+    config.leaf.encode
+    tree
 
 pathDecoder : DecoderConfig <%- alphabet(height - 1) %> leaf path -> Decoder path
 pathDecoder config =
   (JD.field "path" <| JD.array JD.int)
     |> JD.andThen (\path ->
       case Array.length path of
-        <% for (let j = 1; j <= height; j++) { %>
-        <%- j %> -> JD.succeed (config.<% if (j === 1) { %>leafPathType<% } else { %>level<%- j %>PathType<% } %> << TreePath<%- j %>)
+        <% for (let j = 0; j < height; j++) { %>
+        <%- j %> -> JD.succeed (config.<% if (j === height - 1) { %>leaf.pathType<% } else { %>level<%- height - j %>.pathType<% } %> << TreePath<%- height - j %>)
         <% } %>
         otherwise -> JD.fail <| "Illegal path length " ++ toString (Array.length path)
     )
@@ -88,6 +97,13 @@ pathDecoder config =
         (JD.field "path" <| JD.array JD.int)
     )
 
+toRootPath : Tree4 a b c leaf -> TreePath4 a b c leaf
+toRootPath tree =
+  TreePath4
+    { tree = tree
+    , path = Array.empty
+    }
+
 <% for (let n = 1; n <= height; n++) { %>
 decoder<%- n %> : <%- n > 1 ? alphabet(n-1).split(" ").map(letter => `(Decoder ${letter}, String)`).join(" -> ") + "->" : "" %> Decoder leaf -> Decoder (Tree<%- n %> <%- alphabet(n - 1) %> leaf)
 decoder<%- n %> <%- n > 1 ? alphabet(n-1).split(" ").map(letter => `(${letter}Decoder, ${letter}ChildrenField)`).join(" ") : "" %> leafDecoder =
@@ -95,14 +111,35 @@ decoder<%- n %> <%- n > 1 ? alphabet(n-1).split(" ").map(letter => `(${letter}De
   leafDecoder
     |> JD.map (\data -> Tree1 { data = data })
   <% } else { %>
-    JD.oneOf
-        [ JD.map2 (\data children -> Tree<%- n %> { data = data, children = children })
-            (aDecoder |> JD.map Data.BranchData)
-            (JD.field aChildrenField (JD.array <| decoder<%- n - 1 %> <%- n > 2 ? alphabet(n - 2, 1).split(" ").map(letter => `(${letter}Decoder, ${letter}ChildrenField)`).join(" ") : "" %> leafDecoder))
-        , JD.map (\data -> Tree<%- n %> { data = data, children = Array.empty })
-            (leafDecoder |> JD.map Data.LeafData)
-        ]
+  JD.oneOf
+      [ JD.map2 (\data children -> Tree<%- n %> { data = data, children = children })
+          (aDecoder |> JD.map Data.BranchData)
+          (JD.field aChildrenField (JD.array <| decoder<%- n - 1 %> <%- n > 2 ? alphabet(n - 2, 1).split(" ").map(letter => `(${letter}Decoder, ${letter}ChildrenField)`).join(" ") : "" %> leafDecoder))
+      , JD.map (\data -> Tree<%- n %> { data = data, children = Array.empty })
+          (leafDecoder |> JD.map Data.LeafData)
+      ]
   <% } %>
+
+encode<%- n %> : <%- n > 1 ? alphabet(n-1).split(" ").map(letter => `(${letter} -> List (String, Value), String)`).join(" -> ") + "->" : "" %> (leaf -> Value) -> Tree<%- n %> <%- alphabet(n - 1) %> leaf -> Value
+encode<%- n %> <%- n > 1 ? alphabet(n-1).split(" ").map(letter => `(${letter}Encoders, ${letter}ChildrenField)`).join(" ") : "" %> leafEncode (Tree<%- n %> { data <% if (n > 1) { %>, children<% } %> }) =
+  <% if (n === 1) { %>
+  leafEncode data
+  <% } else { %>
+  case data of
+    Data.BranchData b ->
+      JE.object <|
+        (aChildrenField, JE.array <| Array.map (encode<%- n - 1 %> <%- n > 2 ? alphabet(n - 2, 1).split(" ").map(letter => `(${letter}Encoders, ${letter}ChildrenField)`).join(" ") : "" %> leafEncode) children) :: aEncoders b
+
+    Data.LeafData l ->
+      leafEncode l
+  <% } %>
+
+pathEncode<%- n %> : DecoderConfig a b c leaf path -> TreePath<%- n %> a b c leaf -> Value
+pathEncode<%- n %> config (TreePath<%- n %> { tree, path }) =
+  JE.object
+    [ ("tree", encode config tree)
+    , ("path", (JE.array << Array.map JE.int) path)
+    ]
 
 getFocusedTree<%- n %> : TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> Tree<%- n %> <%- alphabet(n - 1, height - n) %> leaf
 getFocusedTree<%- n %> (TreePath<%- n %> { tree, path }) =

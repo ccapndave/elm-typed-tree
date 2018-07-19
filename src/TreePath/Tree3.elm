@@ -6,6 +6,7 @@ module TreePath.Tree3
         , toRootPath
         , Tree
         , TreePath3
+        , pathEncode3
         , data3
         , top3
         , up3
@@ -13,6 +14,7 @@ module TreePath.Tree3
         , down3
         , downs3
         , TreePath2
+        , pathEncode2
         , data2
         , top2
         , up2
@@ -20,6 +22,7 @@ module TreePath.Tree3
         , down2
         , downs2
         , TreePath1
+        , pathEncode1
         , data1
         , top1
         , up1
@@ -31,6 +34,7 @@ module TreePath.Tree3
 import TreePath.Data as Data exposing (Data)
 import Array exposing (Array)
 import Json.Decode as JD exposing (Decoder)
+import Json.Encode as JE exposing (Value)
 
 
 type alias Tree a b leaf =
@@ -79,31 +83,41 @@ type TreePath3 a b leaf
 
 
 type alias DecoderConfig a b leaf path =
-    { level3Decoder : Decoder a
-    , level3PathType : TreePath3 a b c leaf -> path
-    , level3ChildrenField : String
-    , level2Decoder : Decoder b
-    , level2PathType : TreePath2 a b c leaf -> path
-    , level2ChildrenField : String
-    , leafDecoder : Decoder leaf
-    , leafPathType : TreePath1 a b c leaf -> path
+    { level3 :
+        { decoder : Decoder a
+        , encoders : a -> List ( String, Value )
+        , pathType : TreePath3 a b c leaf -> path
+        , childrenField : String
+        }
+    , level2 :
+        { decoder : Decoder b
+        , encoders : b -> List ( String, Value )
+        , pathType : TreePath2 a b c leaf -> path
+        , childrenField : String
+        }
+    , leaf :
+        { decoder : Decoder leaf
+        , encode : leaf -> Value
+        , pathType : TreePath1 a b c leaf -> path
+        }
     }
 
 
 decoder : DecoderConfig a b leaf path -> Decoder (Tree3 a b leaf)
 decoder config =
     decoder3
-        ( config.level3Decoder, config.level3ChildrenField )
-        ( config.level2Decoder, config.level2ChildrenField )
-        config.leafDecoder
+        ( config.level3.decoder, config.level3.childrenField )
+        ( config.level2.decoder, config.level2.childrenField )
+        config.leaf.decoder
 
 
-toRootPath : Tree4 a b c leaf -> TreePath4 a b c leaf
-toRootPath tree =
-    TreePath4
-        { tree = tree
-        , path = Array.empty
-        }
+encode : DecoderConfig a b leaf path -> Tree3 a b leaf -> Value
+encode config tree =
+    encode3
+        ( config.level3.encoders, config.level3.childrenField )
+        ( config.level2.encoders, config.level2.childrenField )
+        config.leaf.encode
+        tree
 
 
 pathDecoder : DecoderConfig a b leaf path -> Decoder path
@@ -112,14 +126,14 @@ pathDecoder config =
         |> JD.andThen
             (\path ->
                 case Array.length path of
+                    0 ->
+                        JD.succeed (config.level3.pathType << TreePath3)
+
                     1 ->
-                        JD.succeed (config.leafPathType << TreePath1)
+                        JD.succeed (config.level2.pathType << TreePath2)
 
                     2 ->
-                        JD.succeed (config.level2PathType << TreePath2)
-
-                    3 ->
-                        JD.succeed (config.level3PathType << TreePath3)
+                        JD.succeed (config.leaf.pathType << TreePath1)
 
                     otherwise ->
                         JD.fail <| "Illegal path length " ++ toString (Array.length path)
@@ -132,10 +146,31 @@ pathDecoder config =
             )
 
 
+toRootPath : Tree4 a b c leaf -> TreePath4 a b c leaf
+toRootPath tree =
+    TreePath4
+        { tree = tree
+        , path = Array.empty
+        }
+
+
 decoder1 : Decoder leaf -> Decoder (Tree1 leaf)
 decoder1 leafDecoder =
     leafDecoder
         |> JD.map (\data -> Tree1 { data = data })
+
+
+encode1 : (leaf -> Value) -> Tree1 leaf -> Value
+encode1 leafEncode (Tree1 { data }) =
+    leafEncode data
+
+
+pathEncode1 : DecoderConfig a b c leaf path -> TreePath1 a b c leaf -> Value
+pathEncode1 config (TreePath1 { tree, path }) =
+    JE.object
+        [ ( "tree", encode config tree )
+        , ( "path", (JE.array << Array.map JE.int) path )
+        ]
 
 
 getFocusedTree1 : TreePath1 a b leaf -> Tree1 leaf
@@ -191,6 +226,26 @@ decoder2 ( aDecoder, aChildrenField ) leafDecoder =
             (JD.field aChildrenField (JD.array <| decoder1 leafDecoder))
         , JD.map (\data -> Tree2 { data = data, children = Array.empty })
             (leafDecoder |> JD.map Data.LeafData)
+        ]
+
+
+encode2 : ( a -> List ( String, Value ), String ) -> (leaf -> Value) -> Tree2 a leaf -> Value
+encode2 ( aEncoders, aChildrenField ) leafEncode (Tree2 { data, children }) =
+    case data of
+        Data.BranchData b ->
+            JE.object <|
+                ( aChildrenField, JE.array <| Array.map (encode1 leafEncode) children )
+                    :: aEncoders b
+
+        Data.LeafData l ->
+            leafEncode l
+
+
+pathEncode2 : DecoderConfig a b c leaf path -> TreePath2 a b c leaf -> Value
+pathEncode2 config (TreePath2 { tree, path }) =
+    JE.object
+        [ ( "tree", encode config tree )
+        , ( "path", (JE.array << Array.map JE.int) path )
         ]
 
 
@@ -259,6 +314,26 @@ decoder3 ( aDecoder, aChildrenField ) ( bDecoder, bChildrenField ) leafDecoder =
             (JD.field aChildrenField (JD.array <| decoder2 ( bDecoder, bChildrenField ) leafDecoder))
         , JD.map (\data -> Tree3 { data = data, children = Array.empty })
             (leafDecoder |> JD.map Data.LeafData)
+        ]
+
+
+encode3 : ( a -> List ( String, Value ), String ) -> ( b -> List ( String, Value ), String ) -> (leaf -> Value) -> Tree3 a b leaf -> Value
+encode3 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) leafEncode (Tree3 { data, children }) =
+    case data of
+        Data.BranchData b ->
+            JE.object <|
+                ( aChildrenField, JE.array <| Array.map (encode2 ( bEncoders, bChildrenField ) leafEncode) children )
+                    :: aEncoders b
+
+        Data.LeafData l ->
+            leafEncode l
+
+
+pathEncode3 : DecoderConfig a b c leaf path -> TreePath3 a b c leaf -> Value
+pathEncode3 config (TreePath3 { tree, path }) =
+    JE.object
+        [ ( "tree", encode config tree )
+        , ( "path", (JE.array << Array.map JE.int) path )
         ]
 
 
