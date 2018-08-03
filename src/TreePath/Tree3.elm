@@ -86,19 +86,19 @@ type alias DecoderConfig a b leaf path =
     { level3 :
         { decoder : Decoder a
         , encoders : a -> List ( String, Value )
-        , pathType : TreePath3 a b c leaf -> path
+        , pathType : TreePath3 a b leaf -> path
         , childrenField : String
         }
     , level2 :
         { decoder : Decoder b
         , encoders : b -> List ( String, Value )
-        , pathType : TreePath2 a b c leaf -> path
+        , pathType : TreePath2 a b leaf -> path
         , childrenField : String
         }
     , leaf :
         { decoder : Decoder leaf
         , encode : leaf -> Value
-        , pathType : TreePath1 a b c leaf -> path
+        , pathType : TreePath1 a b leaf -> path
         }
     }
 
@@ -146,9 +146,9 @@ pathDecoder config =
             )
 
 
-toRootPath : Tree4 a b c leaf -> TreePath4 a b c leaf
+toRootPath : Tree3 a b leaf -> TreePath3 a b leaf
 toRootPath tree =
-    TreePath4
+    TreePath3
         { tree = tree
         , path = Array.empty
         }
@@ -165,7 +165,7 @@ encode1 leafEncode (Tree1 { data }) =
     leafEncode data
 
 
-pathEncode1 : DecoderConfig a b c leaf path -> TreePath1 a b c leaf -> Value
+pathEncode1 : DecoderConfig a b leaf path -> TreePath1 a b leaf -> Value
 pathEncode1 config (TreePath1 { tree, path }) =
     JE.object
         [ ( "tree", encode config tree )
@@ -241,7 +241,7 @@ encode2 ( aEncoders, aChildrenField ) leafEncode (Tree2 { data, children }) =
             leafEncode l
 
 
-pathEncode2 : DecoderConfig a b c leaf path -> TreePath2 a b c leaf -> Value
+pathEncode2 : DecoderConfig a b leaf path -> TreePath2 a b leaf -> Value
 pathEncode2 config (TreePath2 { tree, path }) =
     JE.object
         [ ( "tree", encode config tree )
@@ -329,7 +329,7 @@ encode3 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) leafEncode (
             leafEncode l
 
 
-pathEncode3 : DecoderConfig a b c leaf path -> TreePath3 a b c leaf -> Value
+pathEncode3 : DecoderConfig a b leaf path -> TreePath3 a b leaf -> Value
 pathEncode3 config (TreePath3 { tree, path }) =
     JE.object
         [ ( "tree", encode config tree )

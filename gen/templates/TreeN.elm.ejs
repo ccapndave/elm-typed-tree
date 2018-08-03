@@ -53,14 +53,14 @@ type alias DecoderConfig <%- alphabet(height - 1) %> leaf path =
       <%- n < height ? "," : "" %> level<%- n %> :
         { decoder : Decoder <%- alphabet(1, height - n) %>
         , encoders : <%- alphabet(1, height - n) %> -> List (String, Value)
-        , pathType : TreePath<%- n %> a b c leaf -> path
+        , pathType : TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> path
         , childrenField : String
         }
     <% } %>
     , leaf :
       { decoder : Decoder leaf
       , encode : leaf -> Value
-      , pathType : TreePath1 a b c leaf -> path
+      , pathType : TreePath1 <%- alphabet(height - 1) %> leaf -> path
       }
   }
 
@@ -97,9 +97,9 @@ pathDecoder config =
         (JD.field "path" <| JD.array JD.int)
     )
 
-toRootPath : Tree4 a b c leaf -> TreePath4 a b c leaf
+toRootPath : Tree<%- height %> <%- alphabet(height - 1) %> leaf -> TreePath<%- height %> <%- alphabet(height - 1) %> leaf
 toRootPath tree =
-  TreePath4
+  TreePath<%- height %>
     { tree = tree
     , path = Array.empty
     }
@@ -134,7 +134,7 @@ encode<%- n %> <%- n > 1 ? alphabet(n-1).split(" ").map(letter => `(${letter}Enc
       leafEncode l
   <% } %>
 
-pathEncode<%- n %> : DecoderConfig a b c leaf path -> TreePath<%- n %> a b c leaf -> Value
+pathEncode<%- n %> : DecoderConfig <%- alphabet(height - 1) %> leaf path -> TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> Value
 pathEncode<%- n %> config (TreePath<%- n %> { tree, path }) =
   JE.object
     [ ("tree", encode config tree)

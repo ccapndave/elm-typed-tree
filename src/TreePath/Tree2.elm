@@ -64,13 +64,13 @@ type alias DecoderConfig a leaf path =
     { level2 :
         { decoder : Decoder a
         , encoders : a -> List ( String, Value )
-        , pathType : TreePath2 a b c leaf -> path
+        , pathType : TreePath2 a leaf -> path
         , childrenField : String
         }
     , leaf :
         { decoder : Decoder leaf
         , encode : leaf -> Value
-        , pathType : TreePath1 a b c leaf -> path
+        , pathType : TreePath1 a leaf -> path
         }
     }
 
@@ -113,9 +113,9 @@ pathDecoder config =
             )
 
 
-toRootPath : Tree4 a b c leaf -> TreePath4 a b c leaf
+toRootPath : Tree2 a leaf -> TreePath2 a leaf
 toRootPath tree =
-    TreePath4
+    TreePath2
         { tree = tree
         , path = Array.empty
         }
@@ -132,7 +132,7 @@ encode1 leafEncode (Tree1 { data }) =
     leafEncode data
 
 
-pathEncode1 : DecoderConfig a b c leaf path -> TreePath1 a b c leaf -> Value
+pathEncode1 : DecoderConfig a leaf path -> TreePath1 a leaf -> Value
 pathEncode1 config (TreePath1 { tree, path }) =
     JE.object
         [ ( "tree", encode config tree )
@@ -208,7 +208,7 @@ encode2 ( aEncoders, aChildrenField ) leafEncode (Tree2 { data, children }) =
             leafEncode l
 
 
-pathEncode2 : DecoderConfig a b c leaf path -> TreePath2 a b c leaf -> Value
+pathEncode2 : DecoderConfig a leaf path -> TreePath2 a leaf -> Value
 pathEncode2 config (TreePath2 { tree, path }) =
     JE.object
         [ ( "tree", encode config tree )

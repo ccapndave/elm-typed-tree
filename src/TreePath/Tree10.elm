@@ -240,61 +240,61 @@ type alias DecoderConfig a b c d e f g h i leaf path =
     { level10 :
         { decoder : Decoder a
         , encoders : a -> List ( String, Value )
-        , pathType : TreePath10 a b c leaf -> path
+        , pathType : TreePath10 a b c d e f g h i leaf -> path
         , childrenField : String
         }
     , level9 :
         { decoder : Decoder b
         , encoders : b -> List ( String, Value )
-        , pathType : TreePath9 a b c leaf -> path
+        , pathType : TreePath9 a b c d e f g h i leaf -> path
         , childrenField : String
         }
     , level8 :
         { decoder : Decoder c
         , encoders : c -> List ( String, Value )
-        , pathType : TreePath8 a b c leaf -> path
+        , pathType : TreePath8 a b c d e f g h i leaf -> path
         , childrenField : String
         }
     , level7 :
         { decoder : Decoder d
         , encoders : d -> List ( String, Value )
-        , pathType : TreePath7 a b c leaf -> path
+        , pathType : TreePath7 a b c d e f g h i leaf -> path
         , childrenField : String
         }
     , level6 :
         { decoder : Decoder e
         , encoders : e -> List ( String, Value )
-        , pathType : TreePath6 a b c leaf -> path
+        , pathType : TreePath6 a b c d e f g h i leaf -> path
         , childrenField : String
         }
     , level5 :
         { decoder : Decoder f
         , encoders : f -> List ( String, Value )
-        , pathType : TreePath5 a b c leaf -> path
+        , pathType : TreePath5 a b c d e f g h i leaf -> path
         , childrenField : String
         }
     , level4 :
         { decoder : Decoder g
         , encoders : g -> List ( String, Value )
-        , pathType : TreePath4 a b c leaf -> path
+        , pathType : TreePath4 a b c d e f g h i leaf -> path
         , childrenField : String
         }
     , level3 :
         { decoder : Decoder h
         , encoders : h -> List ( String, Value )
-        , pathType : TreePath3 a b c leaf -> path
+        , pathType : TreePath3 a b c d e f g h i leaf -> path
         , childrenField : String
         }
     , level2 :
         { decoder : Decoder i
         , encoders : i -> List ( String, Value )
-        , pathType : TreePath2 a b c leaf -> path
+        , pathType : TreePath2 a b c d e f g h i leaf -> path
         , childrenField : String
         }
     , leaf :
         { decoder : Decoder leaf
         , encode : leaf -> Value
-        , pathType : TreePath1 a b c leaf -> path
+        , pathType : TreePath1 a b c d e f g h i leaf -> path
         }
     }
 
@@ -377,9 +377,9 @@ pathDecoder config =
             )
 
 
-toRootPath : Tree4 a b c leaf -> TreePath4 a b c leaf
+toRootPath : Tree10 a b c d e f g h i leaf -> TreePath10 a b c d e f g h i leaf
 toRootPath tree =
-    TreePath4
+    TreePath10
         { tree = tree
         , path = Array.empty
         }
@@ -396,7 +396,7 @@ encode1 leafEncode (Tree1 { data }) =
     leafEncode data
 
 
-pathEncode1 : DecoderConfig a b c leaf path -> TreePath1 a b c leaf -> Value
+pathEncode1 : DecoderConfig a b c d e f g h i leaf path -> TreePath1 a b c d e f g h i leaf -> Value
 pathEncode1 config (TreePath1 { tree, path }) =
     JE.object
         [ ( "tree", encode config tree )
@@ -472,7 +472,7 @@ encode2 ( aEncoders, aChildrenField ) leafEncode (Tree2 { data, children }) =
             leafEncode l
 
 
-pathEncode2 : DecoderConfig a b c leaf path -> TreePath2 a b c leaf -> Value
+pathEncode2 : DecoderConfig a b c d e f g h i leaf path -> TreePath2 a b c d e f g h i leaf -> Value
 pathEncode2 config (TreePath2 { tree, path }) =
     JE.object
         [ ( "tree", encode config tree )
@@ -560,7 +560,7 @@ encode3 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) leafEncode (
             leafEncode l
 
 
-pathEncode3 : DecoderConfig a b c leaf path -> TreePath3 a b c leaf -> Value
+pathEncode3 : DecoderConfig a b c d e f g h i leaf path -> TreePath3 a b c d e f g h i leaf -> Value
 pathEncode3 config (TreePath3 { tree, path }) =
     JE.object
         [ ( "tree", encode config tree )
@@ -648,7 +648,7 @@ encode4 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) ( cEncoders,
             leafEncode l
 
 
-pathEncode4 : DecoderConfig a b c leaf path -> TreePath4 a b c leaf -> Value
+pathEncode4 : DecoderConfig a b c d e f g h i leaf path -> TreePath4 a b c d e f g h i leaf -> Value
 pathEncode4 config (TreePath4 { tree, path }) =
     JE.object
         [ ( "tree", encode config tree )
@@ -736,7 +736,7 @@ encode5 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) ( cEncoders,
             leafEncode l
 
 
-pathEncode5 : DecoderConfig a b c leaf path -> TreePath5 a b c leaf -> Value
+pathEncode5 : DecoderConfig a b c d e f g h i leaf path -> TreePath5 a b c d e f g h i leaf -> Value
 pathEncode5 config (TreePath5 { tree, path }) =
     JE.object
         [ ( "tree", encode config tree )
@@ -824,7 +824,7 @@ encode6 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) ( cEncoders,
             leafEncode l
 
 
-pathEncode6 : DecoderConfig a b c leaf path -> TreePath6 a b c leaf -> Value
+pathEncode6 : DecoderConfig a b c d e f g h i leaf path -> TreePath6 a b c d e f g h i leaf -> Value
 pathEncode6 config (TreePath6 { tree, path }) =
     JE.object
         [ ( "tree", encode config tree )
@@ -912,7 +912,7 @@ encode7 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) ( cEncoders,
             leafEncode l
 
 
-pathEncode7 : DecoderConfig a b c leaf path -> TreePath7 a b c leaf -> Value
+pathEncode7 : DecoderConfig a b c d e f g h i leaf path -> TreePath7 a b c d e f g h i leaf -> Value
 pathEncode7 config (TreePath7 { tree, path }) =
     JE.object
         [ ( "tree", encode config tree )
@@ -1000,7 +1000,7 @@ encode8 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) ( cEncoders,
             leafEncode l
 
 
-pathEncode8 : DecoderConfig a b c leaf path -> TreePath8 a b c leaf -> Value
+pathEncode8 : DecoderConfig a b c d e f g h i leaf path -> TreePath8 a b c d e f g h i leaf -> Value
 pathEncode8 config (TreePath8 { tree, path }) =
     JE.object
         [ ( "tree", encode config tree )
@@ -1088,7 +1088,7 @@ encode9 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) ( cEncoders,
             leafEncode l
 
 
-pathEncode9 : DecoderConfig a b c leaf path -> TreePath9 a b c leaf -> Value
+pathEncode9 : DecoderConfig a b c d e f g h i leaf path -> TreePath9 a b c d e f g h i leaf -> Value
 pathEncode9 config (TreePath9 { tree, path }) =
     JE.object
         [ ( "tree", encode config tree )
@@ -1176,7 +1176,7 @@ encode10 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) ( cEncoders
             leafEncode l
 
 
-pathEncode10 : DecoderConfig a b c leaf path -> TreePath10 a b c leaf -> Value
+pathEncode10 : DecoderConfig a b c d e f g h i leaf path -> TreePath10 a b c d e f g h i leaf -> Value
 pathEncode10 config (TreePath10 { tree, path }) =
     JE.object
         [ ( "tree", encode config tree )
