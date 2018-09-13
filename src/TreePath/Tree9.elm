@@ -79,12 +79,44 @@ module TreePath.Tree9
         , downs1
         )
 
+{-| This module provides types and functions for managing a strongly typed tree
+of depth 9. Each level of the tree can have its own type, and each level can
+contain Data either of that type, or the leaf type.
+
+
+# Definition
+
+@docs Tree, TreePath1, TreePath2, TreePath3, TreePath4, TreePath5, TreePath6, TreePath7, TreePath8, TreePath9
+
+
+# Encoders and decoders
+
+@docs DecoderConfig, decoder, pathDecoder, pathEncode1, pathEncode2, pathEncode3, pathEncode4, pathEncode5, pathEncode6, pathEncode7, pathEncode8, pathEncode9
+
+
+# Path constructor
+
+@docs toRootPath
+
+
+# Data
+
+@docs data1, data2, data3, data4, data5, data6, data7, data8, data9
+
+
+# Navigation
+
+@docs top1, up1, offset1, down1, downs1, top2, up2, offset2, down2, downs2, top3, up3, offset3, down3, downs3, top4, up4, offset4, down4, downs4, top5, up5, offset5, down5, downs5, top6, up6, offset6, down6, downs6, top7, up7, offset7, down7, downs7, top8, up8, offset8, down8, downs8, top9, up9, offset9, down9, downs9
+
+-}
+
 import TreePath.Data as Data exposing (Data)
 import Array exposing (Array)
 import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE exposing (Value)
 
 
+{-| -}
 type alias Tree a b c d e f g h leaf =
     Tree9 a b c d e f g h leaf
 
@@ -151,6 +183,7 @@ type Tree9 a b c d e f g h leaf
         }
 
 
+{-| -}
 type TreePath1 a b c d e f g h leaf
     = TreePath1
         { tree : Tree9 a b c d e f g h leaf
@@ -158,6 +191,7 @@ type TreePath1 a b c d e f g h leaf
         }
 
 
+{-| -}
 type TreePath2 a b c d e f g h leaf
     = TreePath2
         { tree : Tree9 a b c d e f g h leaf
@@ -165,6 +199,7 @@ type TreePath2 a b c d e f g h leaf
         }
 
 
+{-| -}
 type TreePath3 a b c d e f g h leaf
     = TreePath3
         { tree : Tree9 a b c d e f g h leaf
@@ -172,6 +207,7 @@ type TreePath3 a b c d e f g h leaf
         }
 
 
+{-| -}
 type TreePath4 a b c d e f g h leaf
     = TreePath4
         { tree : Tree9 a b c d e f g h leaf
@@ -179,6 +215,7 @@ type TreePath4 a b c d e f g h leaf
         }
 
 
+{-| -}
 type TreePath5 a b c d e f g h leaf
     = TreePath5
         { tree : Tree9 a b c d e f g h leaf
@@ -186,6 +223,7 @@ type TreePath5 a b c d e f g h leaf
         }
 
 
+{-| -}
 type TreePath6 a b c d e f g h leaf
     = TreePath6
         { tree : Tree9 a b c d e f g h leaf
@@ -193,6 +231,7 @@ type TreePath6 a b c d e f g h leaf
         }
 
 
+{-| -}
 type TreePath7 a b c d e f g h leaf
     = TreePath7
         { tree : Tree9 a b c d e f g h leaf
@@ -200,6 +239,7 @@ type TreePath7 a b c d e f g h leaf
         }
 
 
+{-| -}
 type TreePath8 a b c d e f g h leaf
     = TreePath8
         { tree : Tree9 a b c d e f g h leaf
@@ -207,6 +247,7 @@ type TreePath8 a b c d e f g h leaf
         }
 
 
+{-| -}
 type TreePath9 a b c d e f g h leaf
     = TreePath9
         { tree : Tree9 a b c d e f g h leaf
@@ -214,6 +255,7 @@ type TreePath9 a b c d e f g h leaf
         }
 
 
+{-| -}
 type alias DecoderConfig a b c d e f g h leaf path =
     { level9 :
         { decoder : Decoder a
@@ -271,6 +313,7 @@ type alias DecoderConfig a b c d e f g h leaf path =
     }
 
 
+{-| -}
 decoder : DecoderConfig a b c d e f g h leaf path -> Decoder (Tree9 a b c d e f g h leaf)
 decoder config =
     decoder9
@@ -300,6 +343,7 @@ encode config tree =
         tree
 
 
+{-| -}
 pathDecoder : DecoderConfig a b c d e f g h leaf path -> Decoder path
 pathDecoder config =
     (JD.field "path" <| JD.array JD.int)
@@ -344,6 +388,7 @@ pathDecoder config =
             )
 
 
+{-| -}
 toRootPath : Tree9 a b c d e f g h leaf -> TreePath9 a b c d e f g h leaf
 toRootPath tree =
     TreePath9
@@ -363,6 +408,7 @@ encode1 leafEncode (Tree1 { data }) =
     leafEncode data
 
 
+{-| -}
 pathEncode1 : DecoderConfig a b c d e f g h leaf path -> TreePath1 a b c d e f g h leaf -> Value
 pathEncode1 config (TreePath1 { tree, path }) =
     JE.object
@@ -384,16 +430,19 @@ treeData1 (Tree1 { data }) =
     data
 
 
+{-| -}
 data1 : TreePath1 a b c d e f g h leaf -> leaf
 data1 =
     getFocusedTree1 >> treeData1
 
 
+{-| -}
 top1 : TreePath1 a b c d e f g h leaf -> TreePath9 a b c d e f g h leaf
 top1 (TreePath1 { tree, path }) =
     TreePath9 { tree = tree, path = Array.empty }
 
 
+{-| -}
 offset1 : Int -> TreePath1 a b c d e f g h leaf -> Maybe (TreePath1 a b c d e f g h leaf)
 offset1 dx ((TreePath1 { tree, path }) as treePath) =
     treePath
@@ -401,16 +450,19 @@ offset1 dx ((TreePath1 { tree, path }) as treePath) =
         |> Maybe.andThen (down2 <| (Array.get 7 path |> unsafe "offset1") + dx)
 
 
+{-| -}
 down1 : Int -> TreePath1 a b c d e f g h leaf -> Maybe Never
 down1 idx ((TreePath1 { tree, path }) as treePath) =
     Nothing
 
 
+{-| -}
 downs1 : TreePath1 a b c d e f g h leaf -> List Never
 downs1 ((TreePath1 { tree, path }) as treePath) =
     []
 
 
+{-| -}
 up1 : TreePath1 a b c d e f g h leaf -> Maybe (TreePath2 a b c d e f g h leaf)
 up1 (TreePath1 { tree, path }) =
     Just <| TreePath2 { tree = tree, path = Array.slice 0 -1 path }
@@ -439,6 +491,7 @@ encode2 ( aEncoders, aChildrenField ) leafEncode (Tree2 { data, children }) =
             leafEncode l
 
 
+{-| -}
 pathEncode2 : DecoderConfig a b c d e f g h leaf path -> TreePath2 a b c d e f g h leaf -> Value
 pathEncode2 config (TreePath2 { tree, path }) =
     JE.object
@@ -465,16 +518,19 @@ treeData2 (Tree2 { data }) =
     data
 
 
+{-| -}
 data2 : TreePath2 a b c d e f g h leaf -> Data h leaf
 data2 =
     getFocusedTree2 >> treeData2
 
 
+{-| -}
 top2 : TreePath2 a b c d e f g h leaf -> TreePath9 a b c d e f g h leaf
 top2 (TreePath2 { tree, path }) =
     TreePath9 { tree = tree, path = Array.empty }
 
 
+{-| -}
 offset2 : Int -> TreePath2 a b c d e f g h leaf -> Maybe (TreePath2 a b c d e f g h leaf)
 offset2 dx ((TreePath2 { tree, path }) as treePath) =
     treePath
@@ -482,6 +538,7 @@ offset2 dx ((TreePath2 { tree, path }) as treePath) =
         |> Maybe.andThen (down3 <| (Array.get 6 path |> unsafe "offset2") + dx)
 
 
+{-| -}
 down2 : Int -> TreePath2 a b c d e f g h leaf -> Maybe (TreePath1 a b c d e f g h leaf)
 down2 idx ((TreePath2 { tree, path }) as treePath) =
     getFocusedTree2 treePath
@@ -490,6 +547,7 @@ down2 idx ((TreePath2 { tree, path }) as treePath) =
         |> Maybe.map (\_ -> TreePath1 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 downs2 : TreePath2 a b c d e f g h leaf -> List (TreePath1 a b c d e f g h leaf)
 downs2 ((TreePath2 { tree, path }) as treePath) =
     getFocusedTree2 treePath
@@ -499,6 +557,7 @@ downs2 ((TreePath2 { tree, path }) as treePath) =
         |> List.map (\idx -> TreePath1 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 up2 : TreePath2 a b c d e f g h leaf -> Maybe (TreePath3 a b c d e f g h leaf)
 up2 (TreePath2 { tree, path }) =
     Just <| TreePath3 { tree = tree, path = Array.slice 0 -1 path }
@@ -527,6 +586,7 @@ encode3 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) leafEncode (
             leafEncode l
 
 
+{-| -}
 pathEncode3 : DecoderConfig a b c d e f g h leaf path -> TreePath3 a b c d e f g h leaf -> Value
 pathEncode3 config (TreePath3 { tree, path }) =
     JE.object
@@ -553,16 +613,19 @@ treeData3 (Tree3 { data }) =
     data
 
 
+{-| -}
 data3 : TreePath3 a b c d e f g h leaf -> Data g leaf
 data3 =
     getFocusedTree3 >> treeData3
 
 
+{-| -}
 top3 : TreePath3 a b c d e f g h leaf -> TreePath9 a b c d e f g h leaf
 top3 (TreePath3 { tree, path }) =
     TreePath9 { tree = tree, path = Array.empty }
 
 
+{-| -}
 offset3 : Int -> TreePath3 a b c d e f g h leaf -> Maybe (TreePath3 a b c d e f g h leaf)
 offset3 dx ((TreePath3 { tree, path }) as treePath) =
     treePath
@@ -570,6 +633,7 @@ offset3 dx ((TreePath3 { tree, path }) as treePath) =
         |> Maybe.andThen (down4 <| (Array.get 5 path |> unsafe "offset3") + dx)
 
 
+{-| -}
 down3 : Int -> TreePath3 a b c d e f g h leaf -> Maybe (TreePath2 a b c d e f g h leaf)
 down3 idx ((TreePath3 { tree, path }) as treePath) =
     getFocusedTree3 treePath
@@ -578,6 +642,7 @@ down3 idx ((TreePath3 { tree, path }) as treePath) =
         |> Maybe.map (\_ -> TreePath2 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 downs3 : TreePath3 a b c d e f g h leaf -> List (TreePath2 a b c d e f g h leaf)
 downs3 ((TreePath3 { tree, path }) as treePath) =
     getFocusedTree3 treePath
@@ -587,6 +652,7 @@ downs3 ((TreePath3 { tree, path }) as treePath) =
         |> List.map (\idx -> TreePath2 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 up3 : TreePath3 a b c d e f g h leaf -> Maybe (TreePath4 a b c d e f g h leaf)
 up3 (TreePath3 { tree, path }) =
     Just <| TreePath4 { tree = tree, path = Array.slice 0 -1 path }
@@ -615,6 +681,7 @@ encode4 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) ( cEncoders,
             leafEncode l
 
 
+{-| -}
 pathEncode4 : DecoderConfig a b c d e f g h leaf path -> TreePath4 a b c d e f g h leaf -> Value
 pathEncode4 config (TreePath4 { tree, path }) =
     JE.object
@@ -641,16 +708,19 @@ treeData4 (Tree4 { data }) =
     data
 
 
+{-| -}
 data4 : TreePath4 a b c d e f g h leaf -> Data f leaf
 data4 =
     getFocusedTree4 >> treeData4
 
 
+{-| -}
 top4 : TreePath4 a b c d e f g h leaf -> TreePath9 a b c d e f g h leaf
 top4 (TreePath4 { tree, path }) =
     TreePath9 { tree = tree, path = Array.empty }
 
 
+{-| -}
 offset4 : Int -> TreePath4 a b c d e f g h leaf -> Maybe (TreePath4 a b c d e f g h leaf)
 offset4 dx ((TreePath4 { tree, path }) as treePath) =
     treePath
@@ -658,6 +728,7 @@ offset4 dx ((TreePath4 { tree, path }) as treePath) =
         |> Maybe.andThen (down5 <| (Array.get 4 path |> unsafe "offset4") + dx)
 
 
+{-| -}
 down4 : Int -> TreePath4 a b c d e f g h leaf -> Maybe (TreePath3 a b c d e f g h leaf)
 down4 idx ((TreePath4 { tree, path }) as treePath) =
     getFocusedTree4 treePath
@@ -666,6 +737,7 @@ down4 idx ((TreePath4 { tree, path }) as treePath) =
         |> Maybe.map (\_ -> TreePath3 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 downs4 : TreePath4 a b c d e f g h leaf -> List (TreePath3 a b c d e f g h leaf)
 downs4 ((TreePath4 { tree, path }) as treePath) =
     getFocusedTree4 treePath
@@ -675,6 +747,7 @@ downs4 ((TreePath4 { tree, path }) as treePath) =
         |> List.map (\idx -> TreePath3 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 up4 : TreePath4 a b c d e f g h leaf -> Maybe (TreePath5 a b c d e f g h leaf)
 up4 (TreePath4 { tree, path }) =
     Just <| TreePath5 { tree = tree, path = Array.slice 0 -1 path }
@@ -703,6 +776,7 @@ encode5 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) ( cEncoders,
             leafEncode l
 
 
+{-| -}
 pathEncode5 : DecoderConfig a b c d e f g h leaf path -> TreePath5 a b c d e f g h leaf -> Value
 pathEncode5 config (TreePath5 { tree, path }) =
     JE.object
@@ -729,16 +803,19 @@ treeData5 (Tree5 { data }) =
     data
 
 
+{-| -}
 data5 : TreePath5 a b c d e f g h leaf -> Data e leaf
 data5 =
     getFocusedTree5 >> treeData5
 
 
+{-| -}
 top5 : TreePath5 a b c d e f g h leaf -> TreePath9 a b c d e f g h leaf
 top5 (TreePath5 { tree, path }) =
     TreePath9 { tree = tree, path = Array.empty }
 
 
+{-| -}
 offset5 : Int -> TreePath5 a b c d e f g h leaf -> Maybe (TreePath5 a b c d e f g h leaf)
 offset5 dx ((TreePath5 { tree, path }) as treePath) =
     treePath
@@ -746,6 +823,7 @@ offset5 dx ((TreePath5 { tree, path }) as treePath) =
         |> Maybe.andThen (down6 <| (Array.get 3 path |> unsafe "offset5") + dx)
 
 
+{-| -}
 down5 : Int -> TreePath5 a b c d e f g h leaf -> Maybe (TreePath4 a b c d e f g h leaf)
 down5 idx ((TreePath5 { tree, path }) as treePath) =
     getFocusedTree5 treePath
@@ -754,6 +832,7 @@ down5 idx ((TreePath5 { tree, path }) as treePath) =
         |> Maybe.map (\_ -> TreePath4 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 downs5 : TreePath5 a b c d e f g h leaf -> List (TreePath4 a b c d e f g h leaf)
 downs5 ((TreePath5 { tree, path }) as treePath) =
     getFocusedTree5 treePath
@@ -763,6 +842,7 @@ downs5 ((TreePath5 { tree, path }) as treePath) =
         |> List.map (\idx -> TreePath4 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 up5 : TreePath5 a b c d e f g h leaf -> Maybe (TreePath6 a b c d e f g h leaf)
 up5 (TreePath5 { tree, path }) =
     Just <| TreePath6 { tree = tree, path = Array.slice 0 -1 path }
@@ -791,6 +871,7 @@ encode6 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) ( cEncoders,
             leafEncode l
 
 
+{-| -}
 pathEncode6 : DecoderConfig a b c d e f g h leaf path -> TreePath6 a b c d e f g h leaf -> Value
 pathEncode6 config (TreePath6 { tree, path }) =
     JE.object
@@ -817,16 +898,19 @@ treeData6 (Tree6 { data }) =
     data
 
 
+{-| -}
 data6 : TreePath6 a b c d e f g h leaf -> Data d leaf
 data6 =
     getFocusedTree6 >> treeData6
 
 
+{-| -}
 top6 : TreePath6 a b c d e f g h leaf -> TreePath9 a b c d e f g h leaf
 top6 (TreePath6 { tree, path }) =
     TreePath9 { tree = tree, path = Array.empty }
 
 
+{-| -}
 offset6 : Int -> TreePath6 a b c d e f g h leaf -> Maybe (TreePath6 a b c d e f g h leaf)
 offset6 dx ((TreePath6 { tree, path }) as treePath) =
     treePath
@@ -834,6 +918,7 @@ offset6 dx ((TreePath6 { tree, path }) as treePath) =
         |> Maybe.andThen (down7 <| (Array.get 2 path |> unsafe "offset6") + dx)
 
 
+{-| -}
 down6 : Int -> TreePath6 a b c d e f g h leaf -> Maybe (TreePath5 a b c d e f g h leaf)
 down6 idx ((TreePath6 { tree, path }) as treePath) =
     getFocusedTree6 treePath
@@ -842,6 +927,7 @@ down6 idx ((TreePath6 { tree, path }) as treePath) =
         |> Maybe.map (\_ -> TreePath5 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 downs6 : TreePath6 a b c d e f g h leaf -> List (TreePath5 a b c d e f g h leaf)
 downs6 ((TreePath6 { tree, path }) as treePath) =
     getFocusedTree6 treePath
@@ -851,6 +937,7 @@ downs6 ((TreePath6 { tree, path }) as treePath) =
         |> List.map (\idx -> TreePath5 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 up6 : TreePath6 a b c d e f g h leaf -> Maybe (TreePath7 a b c d e f g h leaf)
 up6 (TreePath6 { tree, path }) =
     Just <| TreePath7 { tree = tree, path = Array.slice 0 -1 path }
@@ -879,6 +966,7 @@ encode7 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) ( cEncoders,
             leafEncode l
 
 
+{-| -}
 pathEncode7 : DecoderConfig a b c d e f g h leaf path -> TreePath7 a b c d e f g h leaf -> Value
 pathEncode7 config (TreePath7 { tree, path }) =
     JE.object
@@ -905,16 +993,19 @@ treeData7 (Tree7 { data }) =
     data
 
 
+{-| -}
 data7 : TreePath7 a b c d e f g h leaf -> Data c leaf
 data7 =
     getFocusedTree7 >> treeData7
 
 
+{-| -}
 top7 : TreePath7 a b c d e f g h leaf -> TreePath9 a b c d e f g h leaf
 top7 (TreePath7 { tree, path }) =
     TreePath9 { tree = tree, path = Array.empty }
 
 
+{-| -}
 offset7 : Int -> TreePath7 a b c d e f g h leaf -> Maybe (TreePath7 a b c d e f g h leaf)
 offset7 dx ((TreePath7 { tree, path }) as treePath) =
     treePath
@@ -922,6 +1013,7 @@ offset7 dx ((TreePath7 { tree, path }) as treePath) =
         |> Maybe.andThen (down8 <| (Array.get 1 path |> unsafe "offset7") + dx)
 
 
+{-| -}
 down7 : Int -> TreePath7 a b c d e f g h leaf -> Maybe (TreePath6 a b c d e f g h leaf)
 down7 idx ((TreePath7 { tree, path }) as treePath) =
     getFocusedTree7 treePath
@@ -930,6 +1022,7 @@ down7 idx ((TreePath7 { tree, path }) as treePath) =
         |> Maybe.map (\_ -> TreePath6 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 downs7 : TreePath7 a b c d e f g h leaf -> List (TreePath6 a b c d e f g h leaf)
 downs7 ((TreePath7 { tree, path }) as treePath) =
     getFocusedTree7 treePath
@@ -939,6 +1032,7 @@ downs7 ((TreePath7 { tree, path }) as treePath) =
         |> List.map (\idx -> TreePath6 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 up7 : TreePath7 a b c d e f g h leaf -> Maybe (TreePath8 a b c d e f g h leaf)
 up7 (TreePath7 { tree, path }) =
     Just <| TreePath8 { tree = tree, path = Array.slice 0 -1 path }
@@ -967,6 +1061,7 @@ encode8 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) ( cEncoders,
             leafEncode l
 
 
+{-| -}
 pathEncode8 : DecoderConfig a b c d e f g h leaf path -> TreePath8 a b c d e f g h leaf -> Value
 pathEncode8 config (TreePath8 { tree, path }) =
     JE.object
@@ -993,16 +1088,19 @@ treeData8 (Tree8 { data }) =
     data
 
 
+{-| -}
 data8 : TreePath8 a b c d e f g h leaf -> Data b leaf
 data8 =
     getFocusedTree8 >> treeData8
 
 
+{-| -}
 top8 : TreePath8 a b c d e f g h leaf -> TreePath9 a b c d e f g h leaf
 top8 (TreePath8 { tree, path }) =
     TreePath9 { tree = tree, path = Array.empty }
 
 
+{-| -}
 offset8 : Int -> TreePath8 a b c d e f g h leaf -> Maybe (TreePath8 a b c d e f g h leaf)
 offset8 dx ((TreePath8 { tree, path }) as treePath) =
     treePath
@@ -1010,6 +1108,7 @@ offset8 dx ((TreePath8 { tree, path }) as treePath) =
         |> Maybe.andThen (down9 <| (Array.get 0 path |> unsafe "offset8") + dx)
 
 
+{-| -}
 down8 : Int -> TreePath8 a b c d e f g h leaf -> Maybe (TreePath7 a b c d e f g h leaf)
 down8 idx ((TreePath8 { tree, path }) as treePath) =
     getFocusedTree8 treePath
@@ -1018,6 +1117,7 @@ down8 idx ((TreePath8 { tree, path }) as treePath) =
         |> Maybe.map (\_ -> TreePath7 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 downs8 : TreePath8 a b c d e f g h leaf -> List (TreePath7 a b c d e f g h leaf)
 downs8 ((TreePath8 { tree, path }) as treePath) =
     getFocusedTree8 treePath
@@ -1027,6 +1127,7 @@ downs8 ((TreePath8 { tree, path }) as treePath) =
         |> List.map (\idx -> TreePath7 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 up8 : TreePath8 a b c d e f g h leaf -> Maybe (TreePath9 a b c d e f g h leaf)
 up8 (TreePath8 { tree, path }) =
     Just <| TreePath9 { tree = tree, path = Array.slice 0 -1 path }
@@ -1055,6 +1156,7 @@ encode9 ( aEncoders, aChildrenField ) ( bEncoders, bChildrenField ) ( cEncoders,
             leafEncode l
 
 
+{-| -}
 pathEncode9 : DecoderConfig a b c d e f g h leaf path -> TreePath9 a b c d e f g h leaf -> Value
 pathEncode9 config (TreePath9 { tree, path }) =
     JE.object
@@ -1078,21 +1180,25 @@ treeData9 (Tree9 { data }) =
     data
 
 
+{-| -}
 data9 : TreePath9 a b c d e f g h leaf -> Data a leaf
 data9 =
     getFocusedTree9 >> treeData9
 
 
+{-| -}
 top9 : TreePath9 a b c d e f g h leaf -> TreePath9 a b c d e f g h leaf
 top9 (TreePath9 { tree, path }) =
     TreePath9 { tree = tree, path = Array.empty }
 
 
+{-| -}
 offset9 : Int -> TreePath9 a b c d e f g h leaf -> Maybe (TreePath9 a b c d e f g h leaf)
 offset9 dx ((TreePath9 { tree, path }) as treePath) =
     Nothing
 
 
+{-| -}
 down9 : Int -> TreePath9 a b c d e f g h leaf -> Maybe (TreePath8 a b c d e f g h leaf)
 down9 idx ((TreePath9 { tree, path }) as treePath) =
     getFocusedTree9 treePath
@@ -1101,6 +1207,7 @@ down9 idx ((TreePath9 { tree, path }) as treePath) =
         |> Maybe.map (\_ -> TreePath8 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 downs9 : TreePath9 a b c d e f g h leaf -> List (TreePath8 a b c d e f g h leaf)
 downs9 ((TreePath9 { tree, path }) as treePath) =
     getFocusedTree9 treePath
@@ -1110,6 +1217,7 @@ downs9 ((TreePath9 { tree, path }) as treePath) =
         |> List.map (\idx -> TreePath8 { tree = tree, path = Array.push idx path })
 
 
+{-| -}
 up9 : TreePath9 a b c d e f g h leaf -> Maybe Never
 up9 (TreePath9 { tree, path }) =
     Nothing
