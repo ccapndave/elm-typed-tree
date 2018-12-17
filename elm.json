@@ -1,9 +1,9 @@
 {
     "type": "package",
-    "name": "ccapndave/elm-tree-path",
+    "name": "ccapndave/elm-typed-tree",
     "summary": "Strongly typed fixed level trees with a zipper.",
     "license": "BSD-3-Clause",
-    "version": "1.0.1",
+    "version": "1.0.0",
     "exposed-modules": [
         "TreePath.Data",
         "TreePath.Tree2",
