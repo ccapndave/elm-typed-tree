@@ -2,19 +2,22 @@
   "name": "elm-tree-path",
   "version": "1.0.0",
   "scripts": {
+    "develop-one": "ts-node gen/generate-one.ts 4 > /tmp/generated.elm && /Applications/p4merge.app/Contents/Resources/launchp4merge /tmp/generated.elm gen/Tree4.TARGET.elm",
     "generate-one": "ts-node gen/generate-one.ts",
-    "write-all": "ts-node gen/write-all"
+    "write-all": "ts-node gen/write-all",
+    "lint": "ejslint gen/templates/TreeN.elm.ejs"
   },
   "author": "Dave Keen <dev@ruffness.com>",
   "license": "MIT",
   "dependencies": {
     "@types/ejs": "^2.6.0",
     "ejs": "^2.6.1",
-    "elm-format": "^0.6.1-alpha",
+    "elm-format": "^0.8.1",
     "ts-node": "^7.0.0"
   },
   "devDependencies": {
     "@types/node": "^10.5.2",
-    "typescript": "^2.9.2"
+    "ejs-lint": "^0.3.0",
+    "typescript": "^3.2.2"
   }
 }

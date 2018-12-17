@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
-import { execSync } from "child_process"
+import { spawnSync } from "child_process"
 import * as ejs from "ejs"
 
 export function generate(templatePath: string, height: number = null): string {
@@ -13,15 +13,23 @@ export function generate(templatePath: string, height: number = null): string {
     return letters.join(" ");
   };
 
-  const source = fs.readFileSync(templatePath, 'utf8');
-  const rendered = ejs.render(source, { height, alphabet });
+  const treePathDestructurer = (n: number) => {
+    if (n === height) {
+      return `((TreePath${n} tree${n} _ _) as treePath${n})`;
+    } else {
+      return `((TreePath${n} tree${n} idx${n} ${treePathDestructurer(n + 1)}) as treePath${n})`;
+    }
+  }
 
-  try {
-    const formatted = execSync(path.resolve(__dirname, "..", "node_modules", ".bin", "elm-format --stdin"), { input: rendered }).toString();
-    return formatted;
-  } catch (err) {
-    console.error(err.toString());
-    console.log("---");
-    console.log(rendered);
+  const source = fs.readFileSync(templatePath, 'utf8');
+  const rendered = ejs.render(source, { height, alphabet, treePathDestructurer });
+
+  const { stdout, stderr, status } = spawnSync(path.resolve(__dirname, "..", "node_modules", ".bin", "elm-format"), [ "--stdin" ], { input: rendered });
+
+  if (status === 0) {
+    return stdout.toString();
+  } else {
+    console.error(stderr.toString());
+    return rendered;
   }
 }

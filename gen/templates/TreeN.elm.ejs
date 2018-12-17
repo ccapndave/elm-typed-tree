@@ -60,15 +60,17 @@ type Tree<%- n %> <%- alphabet(n - 1) %> leaf =
 
 <% } %>
 
-<% for (let n = 1; n <= height; n++) { %>
+<% for (let n = 1; n <= height - 1; n++) { %>
 {-|
 -}
 type TreePath<%- n %> <%- alphabet(height - 1) %> leaf =
-  TreePath<%- n %>
-    { tree : Tree<%- height %> <%- alphabet(height - 1) %> leaf
-    , path : Array Int
-    }
+    TreePath<%- n %> (Tree<%- n %> <%- alphabet(n - 1, height - n) %> leaf) Int (TreePath<%- n + 1 %> <%- alphabet(height - 1) %> leaf)
 <% } %>
+
+{-|
+-}
+type TreePath<%- height %> <%- alphabet(height - 1) %> leaf =
+    TreePath<%- height %> (Tree<%- height %> <%- alphabet(height - 1) %> leaf) () ()
 
 {-|
 -}
@@ -112,28 +114,32 @@ encode config tree =
 -}
 pathDecoder : DecoderConfig <%- alphabet(height - 1) %> leaf path -> Decoder path
 pathDecoder config =
-  (JD.field "path" <| JD.array JD.int)
-    |> JD.andThen (\path ->
-      case Array.length path of
-        <% for (let j = 0; j < height; j++) { %>
-        <%- j %> -> JD.succeed (config.<% if (j === height - 1) { %>leaf.pathType<% } else { %>level<%- height - j %>.pathType<% } %> << TreePath<%- height - j %>)
-        <% } %>
-        otherwise -> JD.fail <| "Illegal path length " ++ toString (Array.length path)
-    )
-    |> JD.andThen (\pathConstructor ->
-      JD.map2 (\tree path -> pathConstructor { tree = tree, path = path })
-        (JD.field "tree" <| decoder config)
-        (JD.field "path" <| JD.array JD.int)
-    )
+    JD.field "tree" (decoder config)
+        |> JD.andThen
+            (\tree ->
+                JD.field "path" (JD.list JD.int)
+                    |> JD.andThen
+                        (\path ->
+                            case path of
+                                <% for (let n = 1; n <= height; n++) { %> 
+                                [ <%- Array.from({ length: n - 1 }, (_, i) => i + 1).map(i => `b${i}`).join(", ") %> ] ->
+                                    Just (TreePath<%- height %> tree () ())
+                                        <%- Array.from({ length: n - 1 }, (_, i) => i).map(i => `|> Maybe.andThen (down${height - i} b${i + 1})`).join("\n" + ("    ".repeat(4))) %>
+                                        |> Maybe.map <% if (n < height) { %>config.level<%- height - n + 1 %>.pathType<% } else { %> config.leaf.pathType <% } %>
+                                        |> Maybe.map JD.succeed
+                                        |> Maybe.withDefault (JD.fail "Illegal path branch index")
+                                <% } %>
+
+                                otherwise ->
+                                    JD.fail <| "Illegal path length " ++ String.fromInt (List.length path)
+                        )
+            )
 
 {-|
 -}
 toRootPath : Tree<%- height %> <%- alphabet(height - 1) %> leaf -> TreePath<%- height %> <%- alphabet(height - 1) %> leaf
 toRootPath tree =
-  TreePath<%- height %>
-    { tree = tree
-    , path = Array.empty
-    }
+  TreePath<%- height %> tree () ()
 
 <% for (let n = 1; n <= height; n++) { %>
 decoder<%- n %> : <%- n > 1 ? alphabet(n-1).split(" ").map(letter => `(Decoder ${letter}, String)`).join(" -> ") + "->" : "" %> Decoder leaf -> Decoder (Tree<%- n %> <%- alphabet(n - 1) %> leaf)
@@ -159,7 +165,7 @@ encode<%- n %> <%- n > 1 ? alphabet(n-1).split(" ").map(letter => `(${letter}Enc
   case data of
     Data.BranchData b ->
       JE.object <|
-        (aChildrenField, JE.array <| Array.map (encode<%- n - 1 %> <%- n > 2 ? alphabet(n - 2, 1).split(" ").map(letter => `(${letter}Encoders, ${letter}ChildrenField)`).join(" ") : "" %> leafEncode) children) :: aEncoders b
+        (aChildrenField, JE.array (encode<%- n - 1 %> <%- n > 2 ? alphabet(n - 2, 1).split(" ").map(letter => `(${letter}Encoders, ${letter}ChildrenField)`).join(" ") : "" %> leafEncode) children) :: aEncoders b
 
     Data.LeafData l ->
       leafEncode l
@@ -168,93 +174,68 @@ encode<%- n %> <%- n > 1 ? alphabet(n-1).split(" ").map(letter => `(${letter}Enc
 {-|
 -}
 pathEncode<%- n %> : DecoderConfig <%- alphabet(height - 1) %> leaf path -> TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> Value
-pathEncode<%- n %> config (TreePath<%- n %> { tree, path }) =
+pathEncode<%- n %> config <%- treePathDestructurer(n) %> =
   JE.object
-    [ ("tree", encode config tree)
-    , ("path", (JE.array << Array.map JE.int) path)
+    [ ("tree", tree<%- height %> |> encode config)
+    , ("path", [ <%- Array.from({ length: height - n }, (_, i) => i + 1).map(i => `idx${height - i}`).join(",") %>] |> JE.list JE.int)
     ]
-
-getFocusedTree<%- n %> : TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> Tree<%- n %> <%- alphabet(n - 1, height - n) %> leaf
-getFocusedTree<%- n %> (TreePath<%- n %> { tree, path }) =
-  <% if (n === height) { %>
-  tree
-  <% } else { %>
-  getFocusedTree<%- n + 1 %> (TreePath<%- n + 1 %> { tree = tree, path = path })
-    |> treeChildren<%- n + 1 %>
-    |> Array.get (Array.get <%- height - (n + 1) %> path |> unsafe "getFocusedTree<%- n %>")
-    |> unsafe "getFocusedTree<%- n %>"
-  <% } %>
-
-<% if (n > 1) { %>
-treeChildren<%- n %> : Tree<%- n %> <%- alphabet(n - 1) %> leaf -> Array (Tree<%- n - 1 %> <% if (n === 2) { %>leaf<% } else { %><%- alphabet(n - 2, 1) %> leaf<% } %>)
-treeChildren<%- n %> (Tree<%- n %> { children }) = children
-<% } %>
-
-treeData<%- n %> : Tree<%- n %> <%- alphabet(n - 1) %> leaf -> <% if (n === 1) { %>leaf<% } else { %>Data a leaf<% } %>
-treeData<%- n %> (Tree<%- n %> { data }) = data
 
 {-|
 -}
 data<%- n %> : TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> <% if (n === 1) { %>leaf<% } else { %>Data <%- alphabet(1, height - (n)) %> leaf<% } %>
-data<%- n %> = getFocusedTree<%- n %> >> treeData<%- n %>
+data<%- n %> (TreePath<%- n %> (Tree<%- n %> { data }) _ _) =
+  data
 
 {-|
 -}
 top<%- n %> : TreePath<%- n%> <%- alphabet(height - 1) %> leaf -> TreePath<%- height %> <%- alphabet(height - 1) %> leaf
-top<%- n %> (TreePath<%- n %> { tree, path }) = TreePath<%- height %> { tree = tree, path = Array.empty }
+top<%- n %> <%- treePathDestructurer(n) %> =
+  treePath<%- height %>
 
 {-|
 -}
 offset<%- n %> : Int -> TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> Maybe (TreePath<%- n %> <%- alphabet(height - 1) %> leaf)
-offset<%- n %> dx (TreePath<%- n %> { tree, path } as treePath) =
+offset<%- n %> dx (TreePath<%- n %> _ idx parentPath) =
   <% if (n === height) { %>
-  Nothing
+    Nothing
   <% } else { %>
-  treePath
-    |> up<%- n %>
-    |> Maybe.andThen (down<%- n + 1 %> <| (Array.get <%- height - (n + 1) %> path |> unsafe "offset<%- n %>") + dx)
+    parentPath
+      |> down<%- n + 1 %> (idx + dx)
   <% } %>
 
 {-|
 -}
 down<%- n %> : Int -> TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> Maybe <% if (n === 1) { %>Never<% } else { %>(TreePath<%- n - 1 %> <%- alphabet(height - 1) %> leaf)<% } %>
-down<%- n %> idx (TreePath<%- n %> { tree, path } as treePath) =
   <% if (n === 1) { %>
-  Nothing
+down<%- n %> _ _ =
+    Nothing
   <% } else { %>
-  getFocusedTree<%- n %> treePath
-    |> treeChildren<%- n %>
-    |> Array.get idx
-    |> Maybe.map (\_ -> TreePath<%- n - 1 %> { tree = tree, path = Array.push idx path })
+down<%- n %> idx ((TreePath<%- n %> ((Tree<%- n %> { children }) as tree) _ _) as treePath) =
+    children
+      |> Array.get idx
+      |> Maybe.map (\childTree -> TreePath<%- n - 1 %> childTree idx treePath)
   <% } %>
 
 {-|
 -}
 downs<%- n %> : TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> List <% if (n === 1) { %>Never<% } else { %>(TreePath<%- n - 1 %> <%- alphabet(height - 1) %> leaf)<% } %>
-downs<%- n %> ((TreePath<%- n %> { tree, path }) as treePath) =
   <% if (n === 1) { %>
-  []
+downs<%- n %> _ =
+    []
   <% } else { %>
-  getFocusedTree<%- n %> treePath
-    |> treeChildren<%- n %>
-    |> (\children -> Array.length children - 1)
-    |> List.range 0
-    |> List.map (\idx -> TreePath<%- n - 1 %> { tree = tree, path = Array.push idx path })
+downs<%- n %> ((TreePath<%- n %> ((Tree<%- n %> { children }) as tree) _ _) as treePath) =
+    List.range 0 (Array.length children - 1)
+      |> List.filterMap (\idx -> down<%- n %> idx treePath)
   <% } %>
 
 {-|
 -}
 up<%- n %> : TreePath<%- n %> <%- alphabet(height - 1) %> leaf -> Maybe <% if (n === height) { %>Never<% } else { %>(TreePath<%- n + 1 %> <%- alphabet(height - 1) %> leaf)<% } %>
-up<%- n %> (TreePath<%- n %> { tree, path }) =
+up<%- n %> <%- treePathDestructurer(n) %> =
   <% if (n === height) { %>
-  Nothing
+    Nothing
   <% } else { %>
-  Just <| TreePath<%- n + 1 %> { tree = tree, path = Array.slice 0 -1 path }
+    Just treePath<%- n + 1 %>
   <% } %>
-<% } %>
 
-unsafe : String -> Maybe a -> a
-unsafe msg maybe =
-  case maybe of
-    Just a -> a
-    Nothing -> Debug.crash msg
+<% } %>

@@ -1,9 +1,7 @@
-module TreePath.Data
-    exposing
-        ( Data(..)
-        , getBranchData
-        , getLeafData
-        )
+module TreePath.Data exposing
+    ( Data(..)
+    , getBranchData, getLeafData
+    )
 
 {-| This module represents the data held at the node of a tree. Each node can
 have either branch or leafdata, so this data can be either of those.
